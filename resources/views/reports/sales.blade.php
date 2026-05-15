@@ -1,0 +1,11 @@
+@extends('layouts.app')
+
+@section('title', 'Relatorio Comercial - VICZ Implementos')
+
+@section('content')
+    <x-page-header title="Relatorio Comercial" subtitle="Em construcao" />
+
+    <x-card title="Resumo">
+        <x-empty-state icon="report" title="Sem dados processados" message="Este relatorio sera implementado na proxima fase." />
+    </x-card>
+@endsection
