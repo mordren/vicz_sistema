@@ -13,7 +13,7 @@ enum ReceivableType: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::DOWN_PAYMENT => 'Entrada',
             self::INSTALLMENT => 'Parcela',
             self::COMPLETION_PAYMENT => 'Pagamento na entrega',

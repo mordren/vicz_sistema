@@ -281,25 +281,29 @@ class PolicyTest extends TestCase
         $this->assertFalse(Gate::forUser($sales)->allows('report.viewFinancial'));
     }
 
-    public function test_report_gate_operational_allows_admin_finance_operations(): void
+    public function test_report_gate_operational_allows_admin_and_operations_only(): void
     {
         $admin = User::factory()->admin()->create();
+        $finance = User::factory()->finance()->create();
         $ops = User::factory()->operations()->create();
         $sales = User::factory()->sales()->create();
 
         $this->assertTrue(Gate::forUser($admin)->allows('report.viewOperational'));
         $this->assertTrue(Gate::forUser($ops)->allows('report.viewOperational'));
+        $this->assertFalse(Gate::forUser($finance)->allows('report.viewOperational'));
         $this->assertFalse(Gate::forUser($sales)->allows('report.viewOperational'));
     }
 
-    public function test_report_gate_sales_allows_admin_finance_sales(): void
+    public function test_report_gate_sales_allows_admin_and_sales_only(): void
     {
         $admin = User::factory()->admin()->create();
+        $finance = User::factory()->finance()->create();
         $sales = User::factory()->sales()->create();
         $ops = User::factory()->operations()->create();
 
         $this->assertTrue(Gate::forUser($admin)->allows('report.viewSales'));
         $this->assertTrue(Gate::forUser($sales)->allows('report.viewSales'));
+        $this->assertFalse(Gate::forUser($finance)->allows('report.viewSales'));
         $this->assertFalse(Gate::forUser($ops)->allows('report.viewSales'));
     }
 

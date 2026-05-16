@@ -22,7 +22,7 @@ class WorkOrderFactory extends Factory
         $openedAt = fake()->dateTimeBetween('-6 months', 'now');
 
         return [
-            'number' => 'OS-' . str_pad(self::$sequence++, 5, '0', STR_PAD_LEFT),
+            'number' => 'OS-'.str_pad(self::$sequence++, 5, '0', STR_PAD_LEFT),
             'customer' => fake()->randomElement([
                 'Fazenda São Lucas Ltda',
                 'Agropecuária Cerrado Sul S.A.',

@@ -61,6 +61,16 @@
                 </a>
             @endcan
 
+            @can('viewAny', \App\Models\Customer::class)
+                <a href="{{ route('customers.index') }}"
+                   class="nav-item {{ request()->routeIs('customers.*') ? 'active' : '' }}">
+                    <span class="nav-item-icon">
+                        <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.98 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    </span>
+                    Clientes
+                </a>
+            @endcan
+
             @can('viewAny', \App\Models\AccountReceivable::class)
                 <a href="{{ route('receivables.index') }}"
                    class="nav-item {{ request()->routeIs('receivables.*') ? 'active' : '' }}">
@@ -130,15 +140,20 @@
                 </a>
             @endcan
 
-            @can('report.viewFinancial')
-                <a href="{{ route('reports.financial') }}"
+            @canany(['report.viewFinancial', 'report.viewOperational', 'report.viewSales'])
+                @php
+                    $reportRoute = auth()->user()->can('report.viewFinancial')
+                        ? 'reports.financial'
+                        : (auth()->user()->can('report.viewOperational') ? 'reports.operational' : 'reports.sales');
+                @endphp
+                <a href="{{ route($reportRoute) }}"
                    class="nav-item {{ request()->routeIs('reports.financial') || request()->routeIs('reports.operational') || request()->routeIs('reports.sales') ? 'active' : '' }}">
                     <span class="nav-item-icon">
                         <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
                     </span>
-                    Relatórios
+                    Relatorios
                 </a>
-            @endcan
+            @endcanany
 
             @can('viewAny', \App\Models\AuditLog::class)
                 <a href="{{ route('audit-logs.index') }}"

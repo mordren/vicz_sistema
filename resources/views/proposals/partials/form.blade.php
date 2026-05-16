@@ -4,9 +4,27 @@
 
 <div class="form-grid-2">
     <div class="form-group">
-        <label class="form-label" for="customer">Cliente</label>
-        <input id="customer" name="customer" type="text" class="form-control @error('customer') is-invalid @enderror" value="{{ old('customer', $proposal->customer ?? '') }}" required>
-        @error('customer')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        @if(($customers ?? collect())->isNotEmpty())
+            <label class="form-label" for="customer_id">Cliente</label>
+            <select
+                id="customer_id"
+                name="customer_id"
+                class="form-control form-select @error('customer_id') is-invalid @enderror"
+                required
+            >
+                <option value="">Selecione um cliente...</option>
+                @foreach($customers as $customer)
+                    <option value="{{ $customer->id }}" @selected(old('customer_id', $proposal->customer_id ?? '') == $customer->id)>
+                        {{ $customer->name }}
+                    </option>
+                @endforeach
+            </select>
+            @error('customer_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        @else
+            <label class="form-label" for="customer">Cliente</label>
+            <input id="customer" name="customer" type="text" class="form-control @error('customer') is-invalid @enderror" value="{{ old('customer', $proposal->customer ?? '') }}" required>
+            @error('customer')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        @endif
     </div>
 
     <div class="form-group">

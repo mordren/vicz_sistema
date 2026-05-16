@@ -460,7 +460,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'OVERDUE_PAYABLE',
             'severity' => AlertSeverity::CRITICAL,
             'title' => 'Conta a pagar vencida há 22 dias',
-            'message' => 'Fornecedor "Indústria Metálica Paraná S.A." — R$ 12.300,00 — vencida em ' . Carbon::now()->subDays(22)->format('d/m/Y'),
+            'message' => 'Fornecedor "Indústria Metálica Paraná S.A." — R$ 12.300,00 — vencida em '.Carbon::now()->subDays(22)->format('d/m/Y'),
             'entity_type' => AccountPayable::class,
             'status' => AlertStatus::OPEN,
         ]);
@@ -469,7 +469,7 @@ class DatabaseSeeder extends Seeder
             'type' => 'OVERDUE_RECEIVABLE',
             'severity' => AlertSeverity::CRITICAL,
             'title' => 'Cobrança em atraso — Grãos do Triângulo',
-            'message' => 'Parcela 2/3 de R$ 22.800,00 esperada em ' . Carbon::now()->subDays(12)->format('d/m/Y') . ' não foi recebida.',
+            'message' => 'Parcela 2/3 de R$ 22.800,00 esperada em '.Carbon::now()->subDays(12)->format('d/m/Y').' não foi recebida.',
             'entity_type' => AccountReceivable::class,
             'status' => AlertStatus::OPEN,
         ]);

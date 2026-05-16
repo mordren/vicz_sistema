@@ -21,14 +21,14 @@ class BadgeHelper
      */
     public static function resolve(object $enum): array
     {
-        return match(true) {
-            $enum instanceof PayableStatus     => self::payable($enum),
-            $enum instanceof ReceivableStatus  => self::receivable($enum),
-            $enum instanceof WorkOrderStatus   => self::workOrder($enum),
-            $enum instanceof ProposalStatus    => self::proposal($enum),
-            $enum instanceof AlertSeverity     => self::alertSeverity($enum),
-            $enum instanceof AlertStatus       => self::alertStatus($enum),
-            default                            => ['variant' => 'neutral', 'label' => $enum->value],
+        return match (true) {
+            $enum instanceof PayableStatus => self::payable($enum),
+            $enum instanceof ReceivableStatus => self::receivable($enum),
+            $enum instanceof WorkOrderStatus => self::workOrder($enum),
+            $enum instanceof ProposalStatus => self::proposal($enum),
+            $enum instanceof AlertSeverity => self::alertSeverity($enum),
+            $enum instanceof AlertStatus => self::alertStatus($enum),
+            default => ['variant' => 'neutral', 'label' => $enum->value],
         };
     }
 
@@ -45,10 +45,10 @@ class BadgeHelper
     // ── Payable ────────────────────────────────────────────────
     private static function payable(PayableStatus $s): array
     {
-        return match($s) {
-            PayableStatus::OPEN      => ['variant' => 'warning', 'label' => 'Em aberto'],
-            PayableStatus::PAID      => ['variant' => 'success', 'label' => 'Pago'],
-            PayableStatus::OVERDUE   => ['variant' => 'danger',  'label' => 'Vencido'],
+        return match ($s) {
+            PayableStatus::OPEN => ['variant' => 'warning', 'label' => 'Em aberto'],
+            PayableStatus::PAID => ['variant' => 'success', 'label' => 'Pago'],
+            PayableStatus::OVERDUE => ['variant' => 'danger',  'label' => 'Vencido'],
             PayableStatus::CANCELLED => ['variant' => 'neutral', 'label' => 'Cancelado'],
         };
     }
@@ -56,10 +56,10 @@ class BadgeHelper
     // ── Receivable ─────────────────────────────────────────────
     private static function receivable(ReceivableStatus $s): array
     {
-        return match($s) {
-            ReceivableStatus::EXPECTED  => ['variant' => 'info',    'label' => 'A receber'],
-            ReceivableStatus::RECEIVED  => ['variant' => 'success', 'label' => 'Recebido'],
-            ReceivableStatus::OVERDUE   => ['variant' => 'danger',  'label' => 'Em atraso'],
+        return match ($s) {
+            ReceivableStatus::EXPECTED => ['variant' => 'info',    'label' => 'A receber'],
+            ReceivableStatus::RECEIVED => ['variant' => 'success', 'label' => 'Recebido'],
+            ReceivableStatus::OVERDUE => ['variant' => 'danger',  'label' => 'Em atraso'],
             ReceivableStatus::CANCELLED => ['variant' => 'neutral', 'label' => 'Cancelado'],
         };
     }
@@ -67,39 +67,39 @@ class BadgeHelper
     // ── Work Order ─────────────────────────────────────────────
     private static function workOrder(WorkOrderStatus $s): array
     {
-        return match($s) {
-            WorkOrderStatus::QUOTE_APPROVED          => ['variant' => 'info',    'label' => 'Aprovada'],
-            WorkOrderStatus::WAITING_DOWN_PAYMENT    => ['variant' => 'warning', 'label' => 'Ag. Entrada'],
+        return match ($s) {
+            WorkOrderStatus::QUOTE_APPROVED => ['variant' => 'info',    'label' => 'Aprovada'],
+            WorkOrderStatus::WAITING_DOWN_PAYMENT => ['variant' => 'warning', 'label' => 'Ag. Entrada'],
             WorkOrderStatus::WAITING_MATERIAL_PURCHASE => ['variant' => 'warning', 'label' => 'Ag. Material'],
-            WorkOrderStatus::IN_PRODUCTION           => ['variant' => 'info',    'label' => 'Em produção'],
-            WorkOrderStatus::WELDING                 => ['variant' => 'info',    'label' => 'Soldagem'],
-            WorkOrderStatus::PAINTING                => ['variant' => 'info',    'label' => 'Pintura'],
-            WorkOrderStatus::ASSEMBLY                => ['variant' => 'info',    'label' => 'Montagem'],
-            WorkOrderStatus::WAITING_CUSTOMER        => ['variant' => 'warning', 'label' => 'Ag. Cliente'],
-            WorkOrderStatus::READY_FOR_DELIVERY      => ['variant' => 'primary', 'label' => 'Pronto entrega'],
-            WorkOrderStatus::DELIVERED               => ['variant' => 'success', 'label' => 'Entregue'],
-            WorkOrderStatus::CANCELLED               => ['variant' => 'neutral', 'label' => 'Cancelada'],
+            WorkOrderStatus::IN_PRODUCTION => ['variant' => 'info',    'label' => 'Em produção'],
+            WorkOrderStatus::WELDING => ['variant' => 'info',    'label' => 'Soldagem'],
+            WorkOrderStatus::PAINTING => ['variant' => 'info',    'label' => 'Pintura'],
+            WorkOrderStatus::ASSEMBLY => ['variant' => 'info',    'label' => 'Montagem'],
+            WorkOrderStatus::WAITING_CUSTOMER => ['variant' => 'warning', 'label' => 'Ag. Cliente'],
+            WorkOrderStatus::READY_FOR_DELIVERY => ['variant' => 'primary', 'label' => 'Pronto entrega'],
+            WorkOrderStatus::DELIVERED => ['variant' => 'success', 'label' => 'Entregue'],
+            WorkOrderStatus::CANCELLED => ['variant' => 'neutral', 'label' => 'Cancelada'],
         };
     }
 
     // ── Proposal ───────────────────────────────────────────────
     private static function proposal(ProposalStatus $s): array
     {
-        return match($s) {
-            ProposalStatus::SENT        => ['variant' => 'info',    'label' => 'Enviada'],
+        return match ($s) {
+            ProposalStatus::SENT => ['variant' => 'info',    'label' => 'Enviada'],
             ProposalStatus::NEGOTIATING => ['variant' => 'warning', 'label' => 'Negociando'],
-            ProposalStatus::APPROVED    => ['variant' => 'success', 'label' => 'Aprovada'],
-            ProposalStatus::LOST        => ['variant' => 'danger',  'label' => 'Perdida'],
-            ProposalStatus::CANCELLED   => ['variant' => 'neutral', 'label' => 'Cancelada'],
+            ProposalStatus::APPROVED => ['variant' => 'success', 'label' => 'Aprovada'],
+            ProposalStatus::LOST => ['variant' => 'danger',  'label' => 'Perdida'],
+            ProposalStatus::CANCELLED => ['variant' => 'neutral', 'label' => 'Cancelada'],
         };
     }
 
     // ── Alert Severity ─────────────────────────────────────────
     private static function alertSeverity(AlertSeverity $s): array
     {
-        return match($s) {
-            AlertSeverity::INFO     => ['variant' => 'info',    'label' => 'Info'],
-            AlertSeverity::WARNING  => ['variant' => 'warning', 'label' => 'Atenção'],
+        return match ($s) {
+            AlertSeverity::INFO => ['variant' => 'info',    'label' => 'Info'],
+            AlertSeverity::WARNING => ['variant' => 'warning', 'label' => 'Atenção'],
             AlertSeverity::CRITICAL => ['variant' => 'danger',  'label' => 'Crítico'],
         };
     }
@@ -107,9 +107,9 @@ class BadgeHelper
     // ── Alert Status ───────────────────────────────────────────
     private static function alertStatus(AlertStatus $s): array
     {
-        return match($s) {
-            AlertStatus::OPEN     => ['variant' => 'warning', 'label' => 'Aberto'],
-            AlertStatus::READ     => ['variant' => 'neutral', 'label' => 'Lido'],
+        return match ($s) {
+            AlertStatus::OPEN => ['variant' => 'warning', 'label' => 'Aberto'],
+            AlertStatus::READ => ['variant' => 'neutral', 'label' => 'Lido'],
             AlertStatus::RESOLVED => ['variant' => 'success', 'label' => 'Resolvido'],
         };
     }

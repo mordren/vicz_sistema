@@ -64,8 +64,13 @@
     <x-filter-bar label="Filtros">
         <form method="GET" action="{{ route('receivables.index') }}" class="receivables-filter-grid" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 2fr auto auto;gap:8px;width:100%;align-items:end;">
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" for="customer">Cliente</label>
-                <input id="customer" name="customer" type="text" class="form-control" value="{{ $filters['customer'] }}" placeholder="Nome do cliente">
+                <label class="form-label" for="customer_id">Cliente</label>
+                <select id="customer_id" name="customer_id" class="form-control form-select">
+                    <option value="">Todos os clientes</option>
+                    @foreach($customers as $customer)
+                        <option value="{{ $customer->id }}" @selected($filters['customer_id'] === (string) $customer->id)>{{ $customer->name }}</option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="form-group" style="margin-bottom:0;">

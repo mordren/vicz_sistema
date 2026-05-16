@@ -15,6 +15,7 @@ class AccountReceivable extends Model
     use HasFactory;
 
     protected $fillable = [
+        'customer_id',
         'customer',
         'work_order_id',
         'work_order_number',
@@ -47,6 +48,11 @@ class AccountReceivable extends Model
     public function workOrder(): BelongsTo
     {
         return $this->belongsTo(WorkOrder::class);
+    }
+
+    public function customerRef(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
     public function createdBy(): BelongsTo

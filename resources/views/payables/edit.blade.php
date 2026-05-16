@@ -5,15 +5,20 @@
 @section('content')
     <x-page-header
         title="Editar Conta {{ $payable->id }}"
-        subtitle="Edicao em construcao"
+        subtitle="Atualize dados da parcela {{ $payable->installment_number }}/{{ $payable->total_installments }}"
     >
         <a href="{{ route('payables.show', $payable) }}" class="btn btn-ghost">Ver detalhe</a>
     </x-page-header>
 
-    <x-card title="Edicao">
-        <x-error-state
-            title="Edicao ainda nao disponivel"
-            message="A atualizacao de contas a pagar sera implementada na proxima fase."
-        />
+    @if($errors->any())
+        <x-error-state title="Existem campos invalidos" message="Revise os dados do formulario e tente novamente." />
+    @endif
+
+    <x-card title="Edicao da Conta a Pagar">
+        <form method="POST" action="{{ route('payables.update', $payable) }}">
+            @csrf
+            @method('PUT')
+            @include('payables._form', ['submitLabel' => 'Salvar alteracoes'])
+        </form>
     </x-card>
 @endsection

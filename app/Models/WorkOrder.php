@@ -16,6 +16,7 @@ class WorkOrder extends Model
     protected $fillable = [
         'number',
         'proposal_id',
+        'customer_id',
         'customer',
         'service_type',
         'description',
@@ -92,6 +93,11 @@ class WorkOrder extends Model
     public function proposal(): BelongsTo
     {
         return $this->belongsTo(Proposal::class);
+    }
+
+    public function customerRef(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
     public function auditLogs(): MorphMany

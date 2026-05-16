@@ -12,7 +12,7 @@ enum PaymentMethod: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::PIX => 'PIX',
             self::BANK_SLIP => 'Boleto',
             self::CASH => 'Dinheiro',

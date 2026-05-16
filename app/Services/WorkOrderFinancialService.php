@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Collection;
 
 class WorkOrderFinancialService
 {
+    public function __construct(private readonly WorkOrderReceivableAutomationService $automationService) {}
+
     public function recalculateFinancials(WorkOrder $workOrder, ?User $actor = null): WorkOrder
     {
         $actualCost = (float) AccountPayable::query()
@@ -97,7 +99,11 @@ class WorkOrderFinancialService
             'updated_by' => $actor->id,
         ]);
 
-        return $workOrder->refresh();
+        $workOrder = $workOrder->refresh();
+
+        $this->automationService->createFinalBalanceReceivableIfNeeded($workOrder, $actualDeliveryDate, $actor);
+
+        return $workOrder;
     }
 
     public function cancel(WorkOrder $workOrder, User $actor, ?string $reason = null): WorkOrder
@@ -105,7 +111,7 @@ class WorkOrderFinancialService
         $notes = $workOrder->notes;
         if ($reason !== null && trim($reason) !== '') {
             $prefix = $notes ? "\n\n" : '';
-            $notes .= $prefix . 'Cancelamento: ' . trim($reason);
+            $notes .= $prefix.'Cancelamento: '.trim($reason);
         }
 
         $workOrder->update([

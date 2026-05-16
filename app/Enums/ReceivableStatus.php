@@ -11,7 +11,7 @@ enum ReceivableStatus: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::EXPECTED => 'Previsto',
             self::RECEIVED => 'Recebido',
             self::OVERDUE => 'Em atraso',

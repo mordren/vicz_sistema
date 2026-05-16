@@ -15,6 +15,7 @@ class Proposal extends Model
 
     protected $fillable = [
         'number',
+        'customer_id',
         'customer',
         'product_or_service_type',
         'description',
@@ -46,6 +47,11 @@ class Proposal extends Model
     public function salesOwner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sales_owner_id');
+    }
+
+    public function customerRef(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
     public function createdBy(): BelongsTo

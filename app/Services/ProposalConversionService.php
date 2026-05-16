@@ -11,6 +11,7 @@ use App\Models\Proposal;
 use App\Models\User;
 use App\Models\WorkOrder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class ProposalConversionService
@@ -75,15 +76,18 @@ class ProposalConversionService
             throw new \DomainException('Somente propostas aprovadas podem ser convertidas em ordem de serviço.');
         }
 
-        $existing = WorkOrder::query()->where('proposal_id', $proposal->id)->first();
-        if ($existing !== null) {
-            return $existing;
+        $hasProposalId = Schema::hasColumn('work_orders', 'proposal_id');
+
+        if ($hasProposalId) {
+            $existing = WorkOrder::query()->where('proposal_id', $proposal->id)->first();
+            if ($existing !== null) {
+                return $existing;
+            }
         }
 
         return DB::transaction(function () use ($proposal, $actor, $createDownPaymentReceivable, $downPaymentAmount): WorkOrder {
-            $workOrder = WorkOrder::query()->create([
+            $payload = [
                 'number' => $this->generateWorkOrderNumber(),
-                'proposal_id' => $proposal->id,
                 'customer' => $proposal->customer,
                 'service_type' => $proposal->product_or_service_type,
                 'description' => $proposal->description,
@@ -103,14 +107,20 @@ class ProposalConversionService
                 'notes' => $proposal->notes,
                 'created_by' => $actor->id,
                 'updated_by' => $actor->id,
-            ]);
+            ];
+
+            if (Schema::hasColumn('work_orders', 'proposal_id')) {
+                $payload['proposal_id'] = $proposal->id;
+            }
+
+            $workOrder = WorkOrder::query()->create($payload);
 
             if ($createDownPaymentReceivable && $downPaymentAmount > 0) {
                 AccountReceivable::query()->create([
                     'customer' => $proposal->customer,
                     'work_order_id' => $workOrder->id,
                     'work_order_number' => $workOrder->number,
-                    'description' => 'Entrada da proposta ' . $proposal->number,
+                    'description' => 'Entrada da proposta '.$proposal->number,
                     'receivable_type' => ReceivableType::DOWN_PAYMENT,
                     'expected_date' => now()->toDateString(),
                     'expected_amount' => $downPaymentAmount,
@@ -129,16 +139,16 @@ class ProposalConversionService
         $year = now()->format('Y');
 
         $last = WorkOrder::query()
-            ->where('number', 'like', 'OS-' . $year . '-%')
+            ->where('number', 'like', 'OS-'.$year.'-%')
             ->orderByDesc('id')
             ->value('number');
 
         if ($last === null) {
-            return 'OS-' . $year . '-0001';
+            return 'OS-'.$year.'-0001';
         }
 
         $sequence = (int) Str::of($last)->afterLast('-')->toString();
 
-        return 'OS-' . $year . '-' . str_pad((string) ($sequence + 1), 4, '0', STR_PAD_LEFT);
+        return 'OS-'.$year.'-'.str_pad((string) ($sequence + 1), 4, '0', STR_PAD_LEFT);
     }
 }

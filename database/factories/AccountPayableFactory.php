@@ -53,6 +53,7 @@ class AccountPayableFactory extends Factory
     public function paid(): static
     {
         $paymentDate = fake()->dateTimeBetween('-3 months', 'now');
+
         return $this->state(fn (array $attr) => [
             'status' => PayableStatus::PAID,
             'payment_date' => $paymentDate,

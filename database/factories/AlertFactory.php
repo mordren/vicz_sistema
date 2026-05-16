@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\AlertSeverity;
 use App\Enums\AlertStatus;
+use App\Enums\AlertType;
 use App\Models\Alert;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,7 +18,7 @@ class AlertFactory extends Factory
     public function definition(): array
     {
         return [
-            'type' => $this->faker->randomElement(['OVERDUE_PAYABLE', 'OVERDUE_RECEIVABLE', 'OVERDUE_WORK_ORDER', 'DUE_TODAY', 'READY_FOR_DELIVERY']),
+            'type' => $this->faker->randomElement(AlertType::cases())->value,
             'severity' => $this->faker->randomElement(AlertSeverity::cases()),
             'title' => $this->faker->sentence(6),
             'message' => $this->faker->sentence(12),

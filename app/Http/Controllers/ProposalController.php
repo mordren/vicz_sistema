@@ -8,26 +8,30 @@ use App\Http\Requests\ApproveProposalRequest;
 use App\Http\Requests\MarkProposalAsLostRequest;
 use App\Http\Requests\StoreProposalRequest;
 use App\Http\Requests\UpdateProposalRequest;
+use App\Models\Customer;
 use App\Models\Proposal;
 use App\Models\User;
 use App\Services\ProposalConversionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ProposalController extends Controller
 {
-    public function __construct(private readonly ProposalConversionService $service)
-    {
-    }
+    public function __construct(private readonly ProposalConversionService $service) {}
 
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Proposal::class);
 
+        $hasProposalCustomerId = Schema::hasColumn('proposals', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
+        $hasWorkOrderProposalId = Schema::hasColumn('work_orders', 'proposal_id');
+
         $filters = [
-            'customer' => (string) $request->string('customer'),
+            'customer_id' => (string) $request->string('customer_id'),
             'status' => (string) $request->string('status'),
             'sales_owner_id' => (string) $request->string('sales_owner_id'),
             'close_from' => (string) $request->string('close_from'),
@@ -37,13 +41,21 @@ class ProposalController extends Controller
         ];
 
         $query = Proposal::query()
-            ->with(['salesOwner:id,name', 'workOrder:id,proposal_id,number'])
+            ->with(['salesOwner:id,name'])
             ->orderByRaw("CASE status WHEN 'NEGOTIATING' THEN 0 WHEN 'SENT' THEN 1 WHEN 'APPROVED' THEN 2 WHEN 'LOST' THEN 3 ELSE 4 END")
             ->orderBy('expected_close_date')
             ->orderByDesc('id');
 
-        if ($filters['customer'] !== '') {
-            $query->where('customer', 'like', '%' . $filters['customer'] . '%');
+        if ($hasWorkOrderProposalId) {
+            $query->with(['workOrder:id,proposal_id,number']);
+        }
+
+        if ($hasProposalCustomerId && $hasCustomersTable) {
+            $query->with('customerRef:id,name');
+        }
+
+        if ($hasProposalCustomerId && $filters['customer_id'] !== '') {
+            $query->where('customer_id', (int) $filters['customer_id']);
         }
 
         if (($status = ProposalStatus::tryFrom($filters['status'])) !== null) {
@@ -72,6 +84,12 @@ class ProposalController extends Controller
 
         $proposals = $query->paginate(15)->withQueryString();
 
+        if (! $hasWorkOrderProposalId) {
+            $proposals->getCollection()->each(function (Proposal $proposal): void {
+                $proposal->setRelation('workOrder', null);
+            });
+        }
+
         $proposals->getCollection()->each(function (Proposal $proposal) use ($request): void {
             $this->service->recalculateWeightedAmount($proposal, $request->user());
         });
@@ -97,12 +115,17 @@ class ProposalController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $customers = ($hasProposalCustomerId && $hasCustomersTable)
+            ? Customer::query()->active()->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return view('proposals.index', [
             'proposals' => $proposals,
             'filters' => $filters,
             'statuses' => ProposalStatus::cases(),
             'summaryCards' => $summaryCards,
             'salesOwners' => $salesOwners,
+            'customers' => $customers,
         ]);
     }
 
@@ -110,23 +133,40 @@ class ProposalController extends Controller
     {
         $this->authorize('create', Proposal::class);
 
+        $hasProposalCustomerId = Schema::hasColumn('proposals', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
+
         $salesOwners = User::query()
             ->whereIn('role', [UserRole::ADMIN, UserRole::SALES])
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $customers = ($hasProposalCustomerId && $hasCustomersTable)
+            ? Customer::query()->active()->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return view('proposals.create', [
             'salesOwners' => $salesOwners,
+            'customers' => $customers,
         ]);
     }
 
     public function store(StoreProposalRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $hasProposalCustomerId = Schema::hasColumn('proposals', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
 
-        $proposal = Proposal::query()->create([
+        $customerId = (int) ($data['customer_id'] ?? 0);
+        $customerName = trim((string) ($data['customer'] ?? ''));
+
+        if ($hasCustomersTable && $customerId > 0) {
+            $customerName = (string) (Customer::query()->find($customerId)?->name ?? $customerName);
+        }
+
+        $payload = [
             'number' => $this->generateProposalNumber(),
-            'customer' => $data['customer'],
+            'customer' => $customerName,
             'product_or_service_type' => $data['product_or_service_type'],
             'description' => $data['description'] ?? null,
             'amount' => (float) $data['amount'],
@@ -139,7 +179,13 @@ class ProposalController extends Controller
             'notes' => $data['notes'] ?? null,
             'created_by' => $request->user()->id,
             'updated_by' => $request->user()->id,
-        ]);
+        ];
+
+        if ($hasProposalCustomerId) {
+            $payload['customer_id'] = $customerId > 0 ? $customerId : null;
+        }
+
+        $proposal = Proposal::query()->create($payload);
 
         $this->service->recalculateWeightedAmount($proposal, $request->user());
 
@@ -152,13 +198,20 @@ class ProposalController extends Controller
     {
         $this->authorize('view', $proposal);
 
+        $hasWorkOrderProposalId = Schema::hasColumn('work_orders', 'proposal_id');
+
         $this->service->recalculateWeightedAmount($proposal, request()->user());
 
-        $proposal->load([
+        $relations = [
             'salesOwner:id,name',
-            'workOrder:id,proposal_id,number,status',
             'attachments.uploadedBy:id,name',
-        ]);
+        ];
+
+        if ($hasWorkOrderProposalId) {
+            $relations[] = 'workOrder:id,proposal_id,number,status';
+        }
+
+        $proposal->load($relations);
 
         $canConvert = auth()->user()->can('convertToWorkOrder', $proposal)
             && $proposal->status === ProposalStatus::APPROVED;
@@ -174,6 +227,9 @@ class ProposalController extends Controller
     {
         $this->authorize('update', $proposal);
 
+        $hasProposalCustomerId = Schema::hasColumn('proposals', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
+
         if (in_array($proposal->status, [ProposalStatus::LOST, ProposalStatus::CANCELLED], true)) {
             return redirect()
                 ->route('proposals.show', $proposal)
@@ -185,15 +241,23 @@ class ProposalController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $customers = ($hasProposalCustomerId && $hasCustomersTable)
+            ? Customer::query()->active()->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return view('proposals.edit', [
             'proposal' => $proposal,
             'salesOwners' => $salesOwners,
+            'customers' => $customers,
         ]);
     }
 
     public function update(UpdateProposalRequest $request, Proposal $proposal): RedirectResponse
     {
         $this->authorize('update', $proposal);
+
+        $hasProposalCustomerId = Schema::hasColumn('proposals', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
 
         if (in_array($proposal->status, [ProposalStatus::LOST, ProposalStatus::CANCELLED], true)) {
             return redirect()
@@ -203,8 +267,15 @@ class ProposalController extends Controller
 
         $data = $request->validated();
 
-        $proposal->update([
-            'customer' => $data['customer'],
+        $customerId = (int) ($data['customer_id'] ?? 0);
+        $customerName = trim((string) ($data['customer'] ?? ''));
+
+        if ($hasCustomersTable && $customerId > 0) {
+            $customerName = (string) (Customer::query()->find($customerId)?->name ?? $customerName);
+        }
+
+        $payload = [
+            'customer' => $customerName,
             'product_or_service_type' => $data['product_or_service_type'],
             'description' => $data['description'] ?? null,
             'amount' => (float) $data['amount'],
@@ -214,7 +285,13 @@ class ProposalController extends Controller
             'sales_owner_id' => $data['sales_owner_id'] ?: null,
             'notes' => $data['notes'] ?? null,
             'updated_by' => $request->user()->id,
-        ]);
+        ];
+
+        if ($hasProposalCustomerId) {
+            $payload['customer_id'] = $customerId > 0 ? $customerId : null;
+        }
+
+        $proposal->update($payload);
 
         if ($proposal->status === ProposalStatus::APPROVED) {
             $proposal->update([
@@ -329,16 +406,16 @@ class ProposalController extends Controller
         $year = now()->format('Y');
 
         $last = Proposal::query()
-            ->where('number', 'like', 'PROP-' . $year . '-%')
+            ->where('number', 'like', 'PROP-'.$year.'-%')
             ->orderByDesc('id')
             ->value('number');
 
         if ($last === null) {
-            return 'PROP-' . $year . '-0001';
+            return 'PROP-'.$year.'-0001';
         }
 
         $sequence = (int) Str::of($last)->afterLast('-')->toString();
 
-        return 'PROP-' . $year . '-' . str_pad((string) ($sequence + 1), 4, '0', STR_PAD_LEFT);
+        return 'PROP-'.$year.'-'.str_pad((string) ($sequence + 1), 4, '0', STR_PAD_LEFT);
     }
 }

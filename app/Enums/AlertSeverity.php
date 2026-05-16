@@ -10,7 +10,7 @@ enum AlertSeverity: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::INFO => 'Informação',
             self::WARNING => 'Atenção',
             self::CRITICAL => 'Crítico',

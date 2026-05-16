@@ -12,7 +12,7 @@ enum ProposalStatus: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::SENT => 'Enviado',
             self::NEGOTIATING => 'Em negociação',
             self::APPROVED => 'Aprovado',

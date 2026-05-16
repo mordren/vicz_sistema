@@ -25,7 +25,7 @@ enum PayableCategory: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::RAW_MATERIAL => 'Matéria-prima',
             self::METAL_SHEET => 'Chapa metálica',
             self::PROFILE => 'Perfil',

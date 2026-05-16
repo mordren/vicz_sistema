@@ -52,7 +52,7 @@ class UpdateWorkOrderStatusRequest extends FormRequest
             if ($responsibleId > 0) {
                 /** @var User|null $responsible */
                 $responsible = User::query()->find($responsibleId);
-                if ($responsible !== null && !in_array($responsible->role, [UserRole::ADMIN, UserRole::OPERATIONS], true)) {
+                if ($responsible !== null && ! in_array($responsible->role, [UserRole::ADMIN, UserRole::OPERATIONS], true)) {
                     $validator->errors()->add('responsible_user_id', 'O responsável deve ser um usuário de Operações ou Administrador.');
                 }
             }

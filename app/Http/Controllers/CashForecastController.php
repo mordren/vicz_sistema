@@ -9,9 +9,7 @@ use Illuminate\View\View;
 
 class CashForecastController extends Controller
 {
-    public function __construct(private readonly CashForecastService $service)
-    {
-    }
+    public function __construct(private readonly CashForecastService $service) {}
 
     public function index(Request $request): View
     {

@@ -35,7 +35,7 @@ class WorkOrderPolicy
 
     public function delete(User $user, WorkOrder $workOrder): bool
     {
-        return $this->update($user, $workOrder);
+        return $user->role === UserRole::ADMIN;
     }
 
     /**

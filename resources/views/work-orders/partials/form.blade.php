@@ -4,16 +4,27 @@
 
 <div class="form-grid-2">
     <div class="form-group">
-        <label class="form-label" for="customer">Cliente</label>
-        <input
-            id="customer"
-            name="customer"
-            type="text"
-            class="form-control @error('customer') is-invalid @enderror"
-            value="{{ old('customer', $workOrder->customer ?? '') }}"
-            required
-        >
-        @error('customer')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        @if(($customers ?? collect())->isNotEmpty())
+            <label class="form-label" for="customer_id">Cliente</label>
+            <select
+                id="customer_id"
+                name="customer_id"
+                class="form-control form-select @error('customer_id') is-invalid @enderror"
+                required
+            >
+                <option value="">Selecione um cliente...</option>
+                @foreach($customers as $customer)
+                    <option value="{{ $customer->id }}" @selected(old('customer_id', isset($workOrder) ? $workOrder->customer_id : '') == $customer->id)>
+                        {{ $customer->name }}
+                    </option>
+                @endforeach
+            </select>
+            @error('customer_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        @else
+            <label class="form-label" for="customer">Cliente</label>
+            <input id="customer" name="customer" type="text" class="form-control @error('customer') is-invalid @enderror" value="{{ old('customer', isset($workOrder) ? $workOrder->customer : '') }}" required>
+            @error('customer')<div class="invalid-feedback">{{ $message }}</div>@enderror
+        @endif
     </div>
 
     <div class="form-group">
@@ -23,7 +34,7 @@
             name="service_type"
             type="text"
             class="form-control @error('service_type') is-invalid @enderror"
-            value="{{ old('service_type', $workOrder->service_type ?? '') }}"
+            value="{{ old('service_type', isset($workOrder) ? $workOrder->service_type : '') }}"
             required
         >
         @error('service_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -37,7 +48,7 @@
         name="description"
         rows="3"
         class="form-control @error('description') is-invalid @enderror"
-    >{{ old('description', $workOrder->description ?? '') }}</textarea>
+    >{{ old('description', isset($workOrder) ? $workOrder->description : '') }}</textarea>
     @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
 
@@ -47,7 +58,7 @@
         <select id="responsible_user_id" name="responsible_user_id" class="form-control form-select @error('responsible_user_id') is-invalid @enderror">
             <option value="">Não definido</option>
             @foreach($responsibleUsers as $responsible)
-                <option value="{{ $responsible->id }}" @selected(old('responsible_user_id', $workOrder->responsible_user_id ?? '') == $responsible->id)>
+                <option value="{{ $responsible->id }}" @selected(old('responsible_user_id', isset($workOrder) ? $workOrder->responsible_user_id : '') == $responsible->id)>
                     {{ $responsible->name }}
                 </option>
             @endforeach
@@ -75,7 +86,7 @@
             name="expected_delivery_date"
             type="date"
             class="form-control @error('expected_delivery_date') is-invalid @enderror"
-            value="{{ old('expected_delivery_date', $workOrder->expected_delivery_date?->toDateString() ?? '') }}"
+            value="{{ old('expected_delivery_date', isset($workOrder) ? $workOrder->expected_delivery_date?->toDateString() : '') }}"
             required
         >
         @error('expected_delivery_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -90,7 +101,7 @@
             name="recalculated_delivery_date"
             type="date"
             class="form-control @error('recalculated_delivery_date') is-invalid @enderror"
-            value="{{ old('recalculated_delivery_date', $workOrder->recalculated_delivery_date?->toDateString() ?? '') }}"
+            value="{{ old('recalculated_delivery_date', isset($workOrder) ? $workOrder->recalculated_delivery_date?->toDateString() : '') }}"
         >
         @error('recalculated_delivery_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
@@ -104,7 +115,7 @@
             step="0.01"
             min="0"
             class="form-control @error('contracted_amount') is-invalid @enderror"
-            value="{{ old('contracted_amount', $workOrder->contracted_amount ?? '') }}"
+            value="{{ old('contracted_amount', isset($workOrder) ? $workOrder->contracted_amount : '') }}"
             required
         >
         @error('contracted_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -119,7 +130,7 @@
             step="0.01"
             min="0"
             class="form-control @error('down_payment_amount') is-invalid @enderror"
-            value="{{ old('down_payment_amount', $workOrder->down_payment_amount ?? 0) }}"
+            value="{{ old('down_payment_amount', isset($workOrder) ? $workOrder->down_payment_amount : 0) }}"
         >
         @error('down_payment_amount')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
@@ -135,7 +146,7 @@
             step="0.01"
             min="0"
             class="form-control @error('estimated_cost') is-invalid @enderror"
-            value="{{ old('estimated_cost', $workOrder->estimated_cost ?? '') }}"
+            value="{{ old('estimated_cost', isset($workOrder) ? $workOrder->estimated_cost : '') }}"
             required
         >
         @error('estimated_cost')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -148,7 +159,7 @@
             name="notes"
             rows="3"
             class="form-control @error('notes') is-invalid @enderror"
-        >{{ old('notes', $workOrder->notes ?? '') }}</textarea>
+        >{{ old('notes', isset($workOrder) ? $workOrder->notes : '') }}</textarea>
         @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 </div>

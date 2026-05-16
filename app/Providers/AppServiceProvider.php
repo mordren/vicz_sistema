@@ -7,6 +7,7 @@ use App\Models\AccountReceivable;
 use App\Models\Alert;
 use App\Models\Attachment;
 use App\Models\AuditLog;
+use App\Models\Customer;
 use App\Models\Proposal;
 use App\Models\WorkOrder;
 use App\Policies\AccountPayablePolicy;
@@ -14,8 +15,10 @@ use App\Policies\AccountReceivablePolicy;
 use App\Policies\AlertPolicy;
 use App\Policies\AttachmentPolicy;
 use App\Policies\AuditLogPolicy;
+use App\Policies\CustomerPolicy;
 use App\Policies\ProposalPolicy;
 use App\Policies\ReportPolicy;
+use App\Policies\SettingsPolicy;
 use App\Policies\WorkOrderPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -32,11 +35,15 @@ class AppServiceProvider extends ServiceProvider
         // Model → Policy bindings
         Gate::policy(AccountPayable::class, AccountPayablePolicy::class);
         Gate::policy(AccountReceivable::class, AccountReceivablePolicy::class);
+        Gate::policy(Customer::class, CustomerPolicy::class);
         Gate::policy(WorkOrder::class, WorkOrderPolicy::class);
         Gate::policy(Proposal::class, ProposalPolicy::class);
         Gate::policy(Alert::class, AlertPolicy::class);
         Gate::policy(Attachment::class, AttachmentPolicy::class);
         Gate::policy(AuditLog::class, AuditLogPolicy::class);
+
+        // Settings and User policies
+        Gate::policy(User::class, SettingsPolicy::class);
 
         // Report gates (no model, role-based)
         Gate::define('report.viewFinancial', fn ($user) => (new ReportPolicy)->viewFinancial($user));
@@ -45,4 +52,3 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('report.viewCashFlow', fn ($user) => (new ReportPolicy)->viewCashFlow($user));
     }
 }
-

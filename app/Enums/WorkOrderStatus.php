@@ -18,7 +18,7 @@ enum WorkOrderStatus: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::QUOTE_APPROVED => 'Orçamento aprovado',
             self::WAITING_DOWN_PAYMENT => 'Aguardando entrada',
             self::WAITING_MATERIAL_PURCHASE => 'Aguardando compra de material',
@@ -35,6 +35,6 @@ enum WorkOrderStatus: string
 
     public function isActive(): bool
     {
-        return !in_array($this, [self::DELIVERED, self::CANCELLED]);
+        return ! in_array($this, [self::DELIVERED, self::CANCELLED]);
     }
 }

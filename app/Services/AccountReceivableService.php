@@ -6,10 +6,12 @@ use App\Enums\PaymentMethod;
 use App\Enums\ReceivableStatus;
 use App\Models\AccountReceivable;
 use App\Models\Attachment;
+use App\Models\Customer;
 use App\Models\User;
 use App\Models\WorkOrder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AccountReceivableService
 {
@@ -31,12 +33,31 @@ class AccountReceivableService
 
     public function create(array $data, User $actor): AccountReceivable
     {
+        $hasReceivableCustomerId = Schema::hasColumn('account_receivables', 'customer_id');
+        $hasWorkOrderCustomerId = Schema::hasColumn('work_orders', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
+
         $workOrder = null;
-        if (!empty($data['work_order_id'])) {
+        if (! empty($data['work_order_id'])) {
             $workOrder = WorkOrder::query()->find($data['work_order_id']);
             $data['work_order_number'] = $workOrder?->number;
+
+            if ($hasReceivableCustomerId && $hasWorkOrderCustomerId) {
+                $data['customer_id'] = $workOrder?->customer_id;
+            }
+
+            $data['customer'] = $workOrder?->customer;
         } else {
             $data['work_order_number'] = null;
+
+            if ($hasCustomersTable && ! empty($data['customer_id'])) {
+                $customer = Customer::query()->find((int) $data['customer_id']);
+                $data['customer'] = $customer?->name;
+            }
+        }
+
+        if (! $hasReceivableCustomerId) {
+            unset($data['customer_id']);
         }
 
         $data['status'] = $this->statusFromExpectedDate((string) $data['expected_date']);
@@ -54,17 +75,40 @@ class AccountReceivableService
 
     public function update(AccountReceivable $receivable, array $data, User $actor): AccountReceivable
     {
+        $hasReceivableCustomerId = Schema::hasColumn('account_receivables', 'customer_id');
+        $hasWorkOrderCustomerId = Schema::hasColumn('work_orders', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
+
         $oldWorkOrderId = $receivable->work_order_id;
 
         $workOrder = null;
-        if (!empty($data['work_order_id'])) {
+        if (! empty($data['work_order_id'])) {
             $workOrder = WorkOrder::query()->find($data['work_order_id']);
             $data['work_order_number'] = $workOrder?->number;
-        } else {
+
+            if ($hasReceivableCustomerId && $hasWorkOrderCustomerId) {
+                $data['customer_id'] = $workOrder?->customer_id;
+            }
+
+            $data['customer'] = $workOrder?->customer;
+        } elseif (array_key_exists('work_order_id', $data) && empty($data['work_order_id'])) {
             $data['work_order_number'] = null;
+
+            if ($hasCustomersTable && ! empty($data['customer_id'])) {
+                $customer = Customer::query()->find((int) $data['customer_id']);
+                $data['customer'] = $customer?->name;
+            }
+        } elseif ($hasCustomersTable && ! empty($data['customer_id'])) {
+            $customer = Customer::query()->find((int) $data['customer_id']);
+            $data['customer'] = $customer?->name;
         }
 
-        $data['status'] = $this->statusFromExpectedDate((string) $data['expected_date']);
+        if (! $hasReceivableCustomerId) {
+            unset($data['customer_id']);
+        }
+
+        $expectedDate = (string) ($data['expected_date'] ?? $receivable->expected_date?->toDateString());
+        $data['status'] = $this->statusFromExpectedDate($expectedDate);
         $data['updated_by'] = $actor->id;
 
         $receivable->update($data);
@@ -103,7 +147,7 @@ class AccountReceivableService
             ]);
 
             if ($receiptFile !== null && $actor->can('create', Attachment::class)) {
-                $storedPath = $receiptFile->store('attachments/receivables/' . $receivable->id, 'public');
+                $storedPath = $receiptFile->store('attachments/receivables/'.$receivable->id, 'public');
 
                 $receivable->attachments()->create([
                     'file_name' => $receiptFile->getClientOriginalName(),
@@ -125,7 +169,7 @@ class AccountReceivableService
         $notes = $receivable->notes;
         if ($cancelReason !== null && trim($cancelReason) !== '') {
             $prefix = $notes ? "\n\n" : '';
-            $notes .= $prefix . 'Cancelamento: ' . trim($cancelReason);
+            $notes .= $prefix.'Cancelamento: '.trim($cancelReason);
         }
 
         $receivable->update([

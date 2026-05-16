@@ -11,7 +11,7 @@ enum PayableStatus: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::OPEN => 'Em aberto',
             self::PAID => 'Pago',
             self::OVERDUE => 'Vencido',

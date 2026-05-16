@@ -12,6 +12,7 @@ class Alert extends Model
 {
     /** @use HasFactory<AlertFactory> */
     use HasFactory;
+
     protected $fillable = [
         'type',
         'severity',
@@ -30,6 +31,21 @@ class Alert extends Model
             'status' => AlertStatus::class,
             'resolved_at' => 'datetime',
         ];
+    }
+
+    public function relatedRoute(): ?array
+    {
+        if ($this->entity_type === null || $this->entity_id === null) {
+            return null;
+        }
+
+        return match ($this->entity_type) {
+            AccountPayable::class => ['name' => 'payables.show', 'params' => [$this->entity_id]],
+            AccountReceivable::class => ['name' => 'receivables.show', 'params' => [$this->entity_id]],
+            WorkOrder::class => ['name' => 'work-orders.show', 'params' => [$this->entity_id]],
+            Proposal::class => ['name' => 'proposals.show', 'params' => [$this->entity_id]],
+            default => null,
+        };
     }
 
     public function scopeOpen($query)

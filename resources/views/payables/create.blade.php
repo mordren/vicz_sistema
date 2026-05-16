@@ -5,15 +5,19 @@
 @section('content')
     <x-page-header
         title="Nova Conta a Pagar"
-        subtitle="Cadastro em construcao"
-    />
+        subtitle="Registrar despesa unica ou parcelada"
+    >
+        <a href="{{ route('payables.index') }}" class="btn btn-ghost">Voltar</a>
+    </x-page-header>
 
-    <x-card title="Formulario">
-        <x-error-state
-            title="Funcionalidade indisponivel"
-            message="A criacao de contas a pagar sera implementada na proxima fase."
-        >
-            <a href="{{ route('payables.index') }}" class="btn btn-secondary">Voltar para lista</a>
-        </x-error-state>
+    @if($errors->any())
+        <x-error-state title="Existem campos invalidos" message="Revise os dados do formulario e tente novamente." />
+    @endif
+
+    <x-card title="Dados da Conta a Pagar">
+        <form method="POST" action="{{ route('payables.store') }}" enctype="multipart/form-data">
+            @csrf
+            @include('payables._form', ['submitLabel' => 'Criar conta'])
+        </form>
     </x-card>
 @endsection

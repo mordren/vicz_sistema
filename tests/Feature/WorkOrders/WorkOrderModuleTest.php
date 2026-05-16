@@ -2,8 +2,6 @@
 
 namespace Tests\Feature\WorkOrders;
 
-use App\Enums\PayableStatus;
-use App\Enums\ReceivableStatus;
 use App\Enums\WorkOrderStatus;
 use App\Models\AccountPayable;
 use App\Models\AccountReceivable;

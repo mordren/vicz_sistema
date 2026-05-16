@@ -20,7 +20,7 @@ class ProposalFactory extends Factory
         $weightedAmount = round($amount * $probability / 100, 2);
 
         return [
-            'number' => 'PROP-' . str_pad(self::$sequence++, 4, '0', STR_PAD_LEFT),
+            'number' => 'PROP-'.str_pad(self::$sequence++, 4, '0', STR_PAD_LEFT),
             'customer' => fake()->randomElement([
                 'Fazenda São Lucas Ltda',
                 'Agropecuária Cerrado Sul S.A.',

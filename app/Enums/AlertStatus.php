@@ -10,7 +10,7 @@ enum AlertStatus: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::OPEN => 'Aberto',
             self::READ => 'Lido',
             self::RESOLVED => 'Resolvido',

@@ -17,7 +17,7 @@ $icons = [
 $svgPath = $icons[$icon] ?? $icons['default'];
 @endphp
 
-<div class="empty-state" role="status">
+<div class="empty-state" role="status" style="width:100%;max-width:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 16px;">
     <div class="empty-state-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24">{!! $svgPath !!}</svg>
     </div>

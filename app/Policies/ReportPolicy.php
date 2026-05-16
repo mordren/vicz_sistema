@@ -28,12 +28,12 @@ class ReportPolicy
 
     public function viewOperational(User $user): bool
     {
-        return in_array($user->role, [UserRole::ADMIN, UserRole::FINANCE, UserRole::OPERATIONS]);
+        return in_array($user->role, [UserRole::ADMIN, UserRole::OPERATIONS]);
     }
 
     public function viewSales(User $user): bool
     {
-        return in_array($user->role, [UserRole::ADMIN, UserRole::FINANCE, UserRole::SALES]);
+        return in_array($user->role, [UserRole::ADMIN, UserRole::SALES]);
     }
 
     public function viewCashFlow(User $user): bool

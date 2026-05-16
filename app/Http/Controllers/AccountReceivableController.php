@@ -9,17 +9,17 @@ use App\Http\Requests\MarkAccountReceivableAsReceivedRequest;
 use App\Http\Requests\StoreAccountReceivableRequest;
 use App\Http\Requests\UpdateAccountReceivableRequest;
 use App\Models\AccountReceivable;
+use App\Models\Customer;
 use App\Models\WorkOrder;
 use App\Services\AccountReceivableService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class AccountReceivableController extends Controller
 {
-    public function __construct(private readonly AccountReceivableService $service)
-    {
-    }
+    public function __construct(private readonly AccountReceivableService $service) {}
 
     public function index(Request $request): View
     {
@@ -27,14 +27,27 @@ class AccountReceivableController extends Controller
 
         $this->service->syncOverdueStatuses();
 
+        $hasReceivableCustomerId = Schema::hasColumn('account_receivables', 'customer_id');
+        $hasWorkOrderCustomerId = Schema::hasColumn('work_orders', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
+
         $query = AccountReceivable::query()
-            ->with(['workOrder:id,number,customer'])
             ->orderByRaw("CASE status WHEN 'OVERDUE' THEN 0 WHEN 'EXPECTED' THEN 1 WHEN 'RECEIVED' THEN 2 ELSE 3 END")
             ->orderBy('expected_date')
             ->orderByDesc('id');
 
+        if ($hasReceivableCustomerId) {
+            $workOrderSelect = $hasWorkOrderCustomerId
+                ? 'workOrder:id,number,customer,customer_id'
+                : 'workOrder:id,number,customer';
+
+            $query->with([$workOrderSelect, 'customerRef:id,name']);
+        } else {
+            $query->with(['workOrder:id,number,customer']);
+        }
+
         $filters = [
-            'customer' => (string) $request->string('customer'),
+            'customer_id' => (string) $request->string('customer_id'),
             'status' => (string) $request->string('status'),
             'expected_from' => (string) $request->string('expected_from'),
             'expected_to' => (string) $request->string('expected_to'),
@@ -42,8 +55,8 @@ class AccountReceivableController extends Controller
             'work_order_id' => (string) $request->string('work_order_id'),
         ];
 
-        if ($filters['customer'] !== '') {
-            $query->where('customer', 'like', '%' . $filters['customer'] . '%');
+        if ($hasReceivableCustomerId && $filters['customer_id'] !== '') {
+            $query->where('customer_id', (int) $filters['customer_id']);
         }
 
         if (($status = ReceivableStatus::tryFrom($filters['status'])) !== null) {
@@ -98,15 +111,22 @@ class AccountReceivableController extends Controller
 
         $openCustomersCount = (int) AccountReceivable::query()
             ->whereIn('status', [ReceivableStatus::EXPECTED, ReceivableStatus::OVERDUE])
-            ->distinct('customer')
-            ->count('customer');
+            ->when(
+                $hasReceivableCustomerId,
+                fn ($builder) => $builder->distinct('customer_id')->count('customer_id'),
+                fn ($builder) => $builder->distinct('customer')->count('customer')
+            );
 
-        $overdueCustomersQuery = AccountReceivable::query()
-            ->selectRaw('customer, COUNT(*) as receivables_count, SUM(expected_amount) as overdue_total')
-            ->where('status', ReceivableStatus::OVERDUE);
+        $overdueCustomersQuery = AccountReceivable::query()->where('status', ReceivableStatus::OVERDUE);
 
-        if ($filters['customer'] !== '') {
-            $overdueCustomersQuery->where('customer', 'like', '%' . $filters['customer'] . '%');
+        if ($hasReceivableCustomerId) {
+            $overdueCustomersQuery->selectRaw('customer_id, customer, COUNT(*) as receivables_count, SUM(expected_amount) as overdue_total');
+        } else {
+            $overdueCustomersQuery->selectRaw('customer, COUNT(*) as receivables_count, SUM(expected_amount) as overdue_total');
+        }
+
+        if ($hasReceivableCustomerId && $filters['customer_id'] !== '') {
+            $overdueCustomersQuery->where('customer_id', (int) $filters['customer_id']);
         }
 
         if ($filters['expected_from'] !== '') {
@@ -130,21 +150,30 @@ class AccountReceivableController extends Controller
         }
 
         $overdueCustomers = $overdueCustomersQuery
-            ->groupBy('customer')
+            ->when(
+                $hasReceivableCustomerId,
+                fn ($builder) => $builder->groupBy('customer_id', 'customer'),
+                fn ($builder) => $builder->groupBy('customer')
+            )
             ->orderByDesc('overdue_total')
             ->limit(5)
             ->get();
 
         $workOrders = WorkOrder::query()
-            ->select(['id', 'number', 'customer'])
+            ->select($hasWorkOrderCustomerId ? ['id', 'number', 'customer', 'customer_id'] : ['id', 'number', 'customer'])
             ->orderByDesc('opened_at')
             ->limit(300)
             ->get();
+
+        $customers = ($hasCustomersTable && $hasReceivableCustomerId)
+            ? Customer::query()->active()->orderBy('name')->get(['id', 'name'])
+            : collect();
 
         return view('receivables.index', [
             'receivables' => $receivables,
             'overdueCustomers' => $overdueCustomers,
             'workOrders' => $workOrders,
+            'customers' => $customers,
             'filters' => $filters,
             'statuses' => ReceivableStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
@@ -163,14 +192,23 @@ class AccountReceivableController extends Controller
     {
         $this->authorize('create', AccountReceivable::class);
 
+        $hasWorkOrderCustomerId = Schema::hasColumn('work_orders', 'customer_id');
+        $hasReceivableCustomerId = Schema::hasColumn('account_receivables', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
+
         $workOrders = WorkOrder::query()
-            ->select(['id', 'number', 'customer'])
+            ->select($hasWorkOrderCustomerId ? ['id', 'number', 'customer', 'customer_id'] : ['id', 'number', 'customer'])
             ->orderByDesc('opened_at')
             ->limit(300)
             ->get();
 
+        $customers = ($hasCustomersTable && $hasReceivableCustomerId)
+            ? Customer::query()->active()->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return view('receivables.create', [
             'workOrders' => $workOrders,
+            'customers' => $customers,
             'types' => ReceivableType::cases(),
         ]);
     }
@@ -191,7 +229,7 @@ class AccountReceivableController extends Controller
         $this->service->syncOneReceivableOverdueStatus($receivable);
 
         $receivable->load([
-            'workOrder:id,number,customer,contracted_amount,received_amount,receivable_balance',
+            'workOrder:id,number,customer_id,contracted_amount,received_amount,receivable_balance',
             'attachments.uploadedBy:id,name',
         ]);
 
@@ -211,15 +249,24 @@ class AccountReceivableController extends Controller
                 ->with('error', 'Somente recebíveis previstos ou em atraso podem ser editados.');
         }
 
+        $hasWorkOrderCustomerId = Schema::hasColumn('work_orders', 'customer_id');
+        $hasReceivableCustomerId = Schema::hasColumn('account_receivables', 'customer_id');
+        $hasCustomersTable = Schema::hasTable('customers');
+
         $workOrders = WorkOrder::query()
-            ->select(['id', 'number', 'customer'])
+            ->select($hasWorkOrderCustomerId ? ['id', 'number', 'customer', 'customer_id'] : ['id', 'number', 'customer'])
             ->orderByDesc('opened_at')
             ->limit(300)
             ->get();
 
+        $customers = ($hasCustomersTable && $hasReceivableCustomerId)
+            ? Customer::query()->active()->orderBy('name')->get(['id', 'name'])
+            : collect();
+
         return view('receivables.edit', [
             'receivable' => $receivable,
             'workOrders' => $workOrders,
+            'customers' => $customers,
             'types' => ReceivableType::cases(),
         ]);
     }
@@ -305,5 +352,4 @@ class AccountReceivableController extends Controller
             ->route('receivables.index')
             ->with('success', 'Recebível cancelado com sucesso.');
     }
-
 }

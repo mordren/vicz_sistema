@@ -47,6 +47,7 @@ class AccountReceivableFactory extends Factory
     public function received(): static
     {
         $date = fake()->dateTimeBetween('-3 months', 'now');
+
         return $this->state(fn (array $attr) => [
             'status' => ReceivableStatus::RECEIVED,
             'received_date' => $date,

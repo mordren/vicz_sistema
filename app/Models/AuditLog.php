@@ -12,6 +12,7 @@ class AuditLog extends Model
 {
     /** @use HasFactory<AuditLogFactory> */
     use HasFactory;
+
     public $timestamps = false;
 
     protected $fillable = [
