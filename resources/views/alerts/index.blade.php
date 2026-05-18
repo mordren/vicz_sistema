@@ -6,6 +6,7 @@
     @php
         use App\Enums\AlertSeverity;
         use App\Enums\AlertStatus;
+        use App\Enums\AlertType;
         use App\Support\BadgeHelper;
     @endphp
 
@@ -57,7 +58,7 @@
                 <select id="type" name="type" class="form-control form-select">
                     <option value="">Todos</option>
                     @foreach($types as $type)
-                        <option value="{{ $type }}" @selected($filters['type'] === $type)>{{ $type }}</option>
+                        <option value="{{ $type }}" @selected($filters['type'] === $type)>{{ AlertType::tryFrom($type)?->label() ?? $type }}</option>
                     @endforeach
                 </select>
             </div>
@@ -137,7 +138,7 @@
                                     <div style="font-weight:600;">{{ $alert->title }}</div>
                                     <div class="td-muted">{{ $alert->message }}</div>
                                 </td>
-                                <td>{{ $alert->type }}</td>
+                                <td>{{ AlertType::tryFrom((string) $alert->type)?->label() ?? $alert->type }}</td>
                                 <td>
                                     <x-status-badge :variant="BadgeHelper::variant($alert->status)" :label="BadgeHelper::label($alert->status)" />
                                 </td>

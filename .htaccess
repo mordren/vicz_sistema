@@ -1,0 +1,21 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If Apache docroot is project root, route all app requests through /public
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^$ public/index.php [L]
+</IfModule>
+
+# Basic protection for sensitive files
+<FilesMatch "^(\.env|composer\.(json|lock)|artisan|phpunit\.xml|\.gitignore|\.gitattributes)$">
+    Require all denied
+</FilesMatch>
+
+<Files ".env">
+    Require all denied
+</Files>

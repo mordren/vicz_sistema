@@ -40,7 +40,6 @@ Route::middleware(['auth', 'active'])->group(function () {
             ->name('receivables.cancel');
         Route::resource('payables', AccountPayableController::class);
         Route::resource('receivables', AccountReceivableController::class);
-        Route::get('audit-logs', fn () => view('audit-logs.index'))->name('audit-logs.index');
         Route::get('reports/financial', [ReportController::class, 'financial'])->name('reports.financial');
         Route::get('reports/financial/export', [ReportController::class, 'exportFinancial'])->name('reports.financial.export');
         Route::get('reports/cash-flow', [CashForecastController::class, 'index'])->name('reports.cash-flow');
@@ -103,6 +102,9 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::patch('settings/users/{user}', [UserController::class, 'update'])->name('settings.users.update');
         Route::get('settings/users/{user}', [UserController::class, 'show'])->name('settings.users.show');
         Route::patch('settings/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('settings.users.toggle-active');
+
+        // Cron execution log (last 100 lines)
+        Route::get('settings/cron-log', [SettingsController::class, 'cronLog'])->name('settings.cron-log');
     });
 
     // ── All roles (read-only for work orders, proposals, alerts) ─────────────

@@ -183,6 +183,8 @@ class SettingsController extends Controller
             'alert_proposal_follow_up_enabled' => ['nullable', 'boolean'],
             'alert_delivery_warning_enabled' => ['nullable', 'boolean'],
             'alert_days_before_due' => ['required', 'integer', 'min:0'],
+            'alert_email_recipients' => ['nullable', 'string', 'max:1000'],
+            'alert_work_order_stale_days' => ['required', 'integer', 'min:1'],
         ]);
 
         $this->persistSettings($validated);
@@ -217,5 +219,22 @@ class SettingsController extends Controller
         return redirect()
             ->route('settings.attachment')
             ->with('success', 'Configurações de Anexos atualizadas com sucesso.');
+    }
+
+    public function cronLog(): \Illuminate\Http\Response
+    {
+        Gate::authorize('viewSettings', User::class);
+
+        $path  = storage_path('logs/cron.log');
+        $lines = [];
+
+        if (file_exists($path)) {
+            $lines = array_reverse(array_filter(
+                array_map('rtrim', file($path)),
+                static fn (string $l): bool => $l !== '',
+            ));
+        }
+
+        return response()->view('settings.cron-log', ['lines' => $lines]);
     }
 }

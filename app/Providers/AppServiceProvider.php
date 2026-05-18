@@ -19,6 +19,7 @@ use App\Policies\CustomerPolicy;
 use App\Policies\ProposalPolicy;
 use App\Policies\ReportPolicy;
 use App\Policies\SettingsPolicy;
+use App\Models\User;
 use App\Policies\WorkOrderPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;

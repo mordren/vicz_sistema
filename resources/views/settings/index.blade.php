@@ -90,6 +90,17 @@
             </div>
         </a>
 
+        {{-- Cron Log --}}
+        <a href="{{ route('settings.cron-log') }}" class="settings-card">
+            <div class="settings-card-icon" style="background-color: rgba(81, 93, 130, 0.1); color: #515d82;">
+                <svg viewBox="0 0 24 24" style="width: 32px; height: 32px;"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+            </div>
+            <div class="settings-card-content">
+                <h3 class="settings-card-title">Log de Cron</h3>
+                <p class="settings-card-description">Histórico de execução dos cron jobs</p>
+            </div>
+        </a>
+
         {{-- Attachments --}}
         <a href="{{ route('settings.attachment') }}" class="settings-card">
             <div class="settings-card-icon" style="background-color: rgba(107, 114, 128, 0.1); color: #6b7280;">
@@ -160,52 +171,3 @@
 
 </div>
 @endsection
-
-
-<div style="display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start;">
-
-    {{-- Sidebar nav --}}
-    <div class="card" style="padding:8px 0;">
-        <nav>
-            <a href="#geral" class="settings-nav-item active">Geral</a>
-            <a href="#usuarios" class="settings-nav-item">Usuários</a>
-            <a href="#alertas" class="settings-nav-item">Alertas</a>
-            <a href="#integracao" class="settings-nav-item">Integração</a>
-        </nav>
-    </div>
-
-    {{-- Content area --}}
-    <x-card title="Configurações Gerais">
-        <x-slot>
-            <x-empty-state
-                icon="default"
-                title="Em desenvolvimento"
-                message="Esta seção estará disponível em breve."
-            />
-        </x-slot>
-    </x-card>
-
-</div>
-
-@endsection
-
-@push('styles')
-<style>
-.settings-nav-item {
-    display: block;
-    padding: 10px 20px;
-    font-size: 14px;
-    color: var(--on-surface-variant);
-    text-decoration: none;
-    border-left: 3px solid transparent;
-    transition: background 0.15s, color 0.15s;
-}
-.settings-nav-item:hover,
-.settings-nav-item.active {
-    background: var(--surface-container);
-    color: var(--primary);
-    border-left-color: var(--primary);
-    font-weight: 500;
-}
-</style>
-@endpush

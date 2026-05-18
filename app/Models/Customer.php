@@ -27,7 +27,6 @@ class Customer extends Model
         'phone',
         'whatsapp',
         'secondary_phone',
-        'contact_person',
         'zip_code',
         'street',
         'number',

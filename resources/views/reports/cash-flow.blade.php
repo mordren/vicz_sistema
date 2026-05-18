@@ -114,36 +114,75 @@
                             <th class="text-right">Saldo projetado</th>
                             <th class="text-right">Entradas vencidas</th>
                             <th class="text-right">Saídas vencidas</th>
+                            @if($filters['include_weighted_proposals'])
                             <th class="text-right">Impacto propostas</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($forecast['rows'] as $row)
-                            <tr class="{{ $row['is_negative'] ? 'cash-row-negative' : '' }} {{ $row['has_high_bill_concentration'] ? 'cash-row-concentration' : '' }}">
+                            @php
+                                $balance = (float) $row['projected_balance'];
+                                $isNegative = $balance < 0;
+                                $isZero     = $balance == 0.0;
+                                $rowClass   = $isNegative ? 'cash-row-negative' : ($isZero ? 'cash-row-zero' : '');
+                                $rowClass  .= $row['has_high_bill_concentration'] ? ' cash-row-concentration' : '';
+                                $balanceClass = $isNegative ? 'cash-value-negative' : ($isZero ? 'cash-value-zero' : 'cash-value-positive');
+                                $overdueIn  = (float) $row['overdue_inflows'];
+                                $overdueOut = (float) $row['overdue_outflows'];
+                            @endphp
+                            <tr class="{{ $rowClass }}">
                                 <td>
-                                    <div>{{ $row['date']->format('d/m/Y') }}</div>
-                                    @if($row['is_negative'])
-                                        <div class="td-muted" style="color:var(--error);">Saldo negativo</div>
+                                    <span class="cash-date">{{ $row['date']->format('d/m') }}</span>
+                                    <span class="cash-weekday">{{ mb_strtolower($row['date']->translatedFormat('D')) }}</span>
+                                    @if($isNegative)
+                                        <span class="cash-row-badge cash-row-badge--negative">saldo negativo</span>
+                                    @elseif($isZero)
+                                        <span class="cash-row-badge cash-row-badge--zero">saldo zerado</span>
                                     @elseif($row['has_high_bill_concentration'])
-                                        <div class="td-muted" style="color:#856404;">Alta concentração de contas</div>
+                                        <span class="cash-row-badge cash-row-badge--warning">concentração alta</span>
                                     @endif
                                 </td>
-                                <td class="text-right td-mono">R$ {{ number_format((float) $row['opening_balance'], 2, ',', '.') }}</td>
-                                <td class="text-right td-mono">R$ {{ number_format((float) $row['expected_inflows'], 2, ',', '.') }}</td>
-                                <td class="text-right td-mono">R$ {{ number_format((float) $row['expected_outflows'], 2, ',', '.') }}</td>
-                                <td class="text-right td-mono {{ $row['projected_balance'] < 0 ? 'cash-value-negative' : '' }}">R$ {{ number_format((float) $row['projected_balance'], 2, ',', '.') }}</td>
-                                <td class="text-right td-mono">R$ {{ number_format((float) $row['overdue_inflows'], 2, ',', '.') }}</td>
-                                <td class="text-right td-mono">R$ {{ number_format((float) $row['overdue_outflows'], 2, ',', '.') }}</td>
-                                <td class="text-right td-mono {{ $filters['include_weighted_proposals'] ? 'cash-scenario-on' : 'cash-scenario-off' }}">R$ {{ number_format((float) $row['weighted_proposal_impact'], 2, ',', '.') }}</td>
+                                <td class="text-right td-mono cash-value-muted">
+                                    {{ $row['opening_balance'] != 0 ? 'R$ '.number_format((float) $row['opening_balance'], 2, ',', '.') : '—' }}
+                                </td>
+                                <td class="text-right td-mono {{ $row['expected_inflows'] > 0 ? 'cash-value-inflow' : 'cash-value-muted' }}">
+                                    {{ $row['expected_inflows'] > 0 ? 'R$ '.number_format((float) $row['expected_inflows'], 2, ',', '.') : '—' }}
+                                </td>
+                                <td class="text-right td-mono {{ $row['expected_outflows'] > 0 ? 'cash-value-outflow' : 'cash-value-muted' }}">
+                                    {{ $row['expected_outflows'] > 0 ? 'R$ '.number_format((float) $row['expected_outflows'], 2, ',', '.') : '—' }}
+                                </td>
+                                <td class="text-right td-mono cash-balance-cell {{ $balanceClass }}">
+                                    R$ {{ number_format($balance, 2, ',', '.') }}
+                                </td>
+                                <td class="text-right td-mono {{ $overdueIn > 0 ? 'cash-value-overdue-in' : 'cash-value-muted' }}">
+                                    {{ $overdueIn > 0 ? 'R$ '.number_format($overdueIn, 2, ',', '.') : '—' }}
+                                </td>
+                                <td class="text-right td-mono {{ $overdueOut > 0 ? 'cash-value-overdue-out' : 'cash-value-muted' }}">
+                                    {{ $overdueOut > 0 ? 'R$ '.number_format($overdueOut, 2, ',', '.') : '—' }}
+                                </td>
+                                @if($filters['include_weighted_proposals'])
+                                <td class="text-right td-mono {{ $row['weighted_proposal_impact'] > 0 ? 'cash-scenario-on' : 'cash-value-muted' }}">
+                                    {{ $row['weighted_proposal_impact'] > 0 ? 'R$ '.number_format((float) $row['weighted_proposal_impact'], 2, ',', '.') : '—' }}
+                                </td>
+                                @endif
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+
+            <div class="cash-legend">
+                <span class="cash-legend-item cash-legend-item--positive">Saldo positivo</span>
+                <span class="cash-legend-item cash-legend-item--zero">Saldo zerado</span>
+                <span class="cash-legend-item cash-legend-item--negative">Saldo negativo</span>
+                <span class="cash-legend-item cash-legend-item--warning">Concentração alta</span>
+                <span class="cash-legend-item cash-legend-item--overdue">Valores vencidos</span>
+            </div>
         @endif
 
         <div class="form-hint" style="margin-top:10px;">
-            O saldo projetado considera apenas inflows/outflows confirmados. O cenário de propostas é exibido separadamente.
+            O saldo projetado considera apenas entradas e saídas confirmadas. Valores vencidos indicam obrigações/recebíveis fora do prazo ainda em aberto.
         </div>
     </x-card>
 
@@ -158,28 +197,126 @@
 
 @push('styles')
 <style>
+/* ── Row state backgrounds ─────────────────────────── */
 .cash-row-negative td {
     background: var(--error-container) !important;
 }
-
+.cash-row-zero td {
+    background: #fff8e1 !important;
+}
 .cash-row-concentration td {
     box-shadow: inset 4px 0 0 #ffc107;
 }
 
-.cash-value-negative {
-    color: var(--error);
+/* ── Projected balance cell ────────────────────────── */
+.cash-balance-cell {
     font-weight: 700;
 }
-
-.cash-scenario-on {
+.cash-value-negative {
+    color: var(--error);
+}
+.cash-value-zero {
+    color: #856404;
+}
+.cash-value-positive {
     color: var(--status-success);
 }
 
-.cash-scenario-off {
+/* ── Monetary cell variants ────────────────────────── */
+.cash-value-muted {
     color: var(--on-surface-variant);
-    opacity: 0.75;
+    opacity: 0.6;
+}
+.cash-value-inflow {
+    color: var(--status-success);
+}
+.cash-value-outflow {
+    color: var(--error);
+}
+.cash-value-overdue-in {
+    color: #b45309;
+    font-weight: 600;
+}
+.cash-value-overdue-out {
+    color: var(--error);
+    font-weight: 600;
+}
+.cash-scenario-on {
+    color: #0d6efd;
 }
 
+/* ── Date cell ─────────────────────────────────────── */
+.cash-date {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+}
+.cash-weekday {
+    display: block;
+    font-size: 11px;
+    color: var(--on-surface-variant);
+    text-transform: capitalize;
+}
+
+/* ── Row state badges ───────────────────────────────── */
+.cash-row-badge {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    white-space: nowrap;
+}
+.cash-row-badge--negative {
+    background: var(--error);
+    color: #fff;
+}
+.cash-row-badge--zero {
+    background: #ffc107;
+    color: #31260a;
+}
+.cash-row-badge--warning {
+    background: #ffe082;
+    color: #5d4b00;
+}
+
+/* ── Legend strip ───────────────────────────────────── */
+.cash-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: var(--surface-muted);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-sm, 6px);
+}
+.cash-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--on-surface-variant);
+}
+.cash-legend-item::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+.cash-legend-item--positive::before { background: var(--secondary-container); }
+.cash-legend-item--zero::before     { background: #ffe082; }
+.cash-legend-item--negative::before { background: var(--error-container); outline: 1px solid var(--error); }
+.cash-legend-item--warning::before  { background: #ffe082; outline: 1px solid #ffc107; }
+.cash-legend-item--overdue::before  { background: #fed7aa; }
+
+/* ── JSON debug card ─────────────────────────────────── */
 .cash-chart-json {
     margin-top: 8px;
     padding: 12px;
@@ -192,20 +329,13 @@
     overflow: auto;
 }
 
+/* ── Responsive ─────────────────────────────────────── */
 @media (max-width: 1080px) {
-    .cash-forecast-filter-grid {
-        grid-template-columns: 1fr 1fr !important;
-    }
-
-    .cash-balance-form {
-        grid-template-columns: 1fr !important;
-    }
+    .cash-forecast-filter-grid { grid-template-columns: 1fr 1fr !important; }
+    .cash-balance-form          { grid-template-columns: 1fr !important; }
 }
-
 @media (max-width: 640px) {
-    .cash-forecast-filter-grid {
-        grid-template-columns: 1fr !important;
-    }
+    .cash-forecast-filter-grid  { grid-template-columns: 1fr !important; }
 }
 </style>
 @endpush

@@ -12,7 +12,7 @@
     @endif
 
     <x-card title="Dados do cliente">
-        <form method="POST" action="{{ route('customers.update', $customer) }}">
+        <form method="POST" action="{{ route('customers.update', $customer) }}" data-customer-form>
             @csrf
             @method('PUT')
             @include('customers._form', ['submitLabel' => 'Salvar alteracoes'])

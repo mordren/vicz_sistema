@@ -41,7 +41,6 @@ class CustomerFactory extends Factory
             'email' => fake()->companyEmail(),
             'phone' => fake()->numerify('###########'),
             'whatsapp' => fake()->numerify('###########'),
-            'contact_person' => fake()->name(),
             'city' => fake()->city(),
             'state' => fake()->stateAbbr(),
             'country' => 'Brasil',
@@ -58,7 +57,6 @@ class CustomerFactory extends Factory
             'legal_name' => null,
             'state_registration' => null,
             'municipal_registration' => null,
-            'contact_person' => null,
         ]);
     }
 

@@ -5,6 +5,7 @@
 @section('content')
     @php
         use App\Enums\AlertStatus;
+        use App\Enums\AlertType;
         use App\Support\BadgeHelper;
         $related = $alert->relatedRoute();
     @endphp
@@ -25,7 +26,7 @@
 
             <div>
                 <div class="form-label">Tipo</div>
-                <div>{{ $alert->type }}</div>
+                <div>{{ AlertType::tryFrom((string) $alert->type)?->label() ?? $alert->type }}</div>
             </div>
 
             <div>

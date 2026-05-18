@@ -12,7 +12,7 @@
     @endif
 
     <x-card title="Dados do cliente">
-        <form method="POST" action="{{ route('customers.store') }}">
+        <form method="POST" action="{{ route('customers.store') }}" data-customer-form>
             @csrf
             @include('customers._form', ['submitLabel' => 'Criar cliente'])
         </form>

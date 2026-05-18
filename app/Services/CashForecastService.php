@@ -46,7 +46,7 @@ class CashForecastService
         $currentBalance = $this->getCurrentBalance();
 
         $expectedInflowsByDate = AccountReceivable::query()
-            ->where('status', ReceivableStatus::EXPECTED->value)
+            ->whereIn('status', [ReceivableStatus::EXPECTED->value, ReceivableStatus::OVERDUE->value])
             ->whereBetween('expected_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->selectRaw('expected_date as forecast_date, SUM(expected_amount) as total')
             ->groupBy('expected_date')
@@ -55,7 +55,7 @@ class CashForecastService
             ->all();
 
         $expectedOutflowsByDate = AccountPayable::query()
-            ->where('status', PayableStatus::OPEN->value)
+            ->whereIn('status', [PayableStatus::OPEN->value, PayableStatus::OVERDUE->value])
             ->whereBetween('due_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->selectRaw('due_date as forecast_date, SUM(amount) as total')
             ->groupBy('due_date')
@@ -99,12 +99,12 @@ class CashForecastService
             $outflows = $expectedOutflowsByDate[$dateKey] ?? 0.0;
 
             $overdueInflows = (float) AccountReceivable::query()
-                ->where('status', ReceivableStatus::EXPECTED->value)
+                ->whereIn('status', [ReceivableStatus::EXPECTED->value, ReceivableStatus::OVERDUE->value])
                 ->whereDate('expected_date', '<', $dateKey)
                 ->sum('expected_amount');
 
             $overdueOutflows = (float) AccountPayable::query()
-                ->where('status', PayableStatus::OPEN->value)
+                ->whereIn('status', [PayableStatus::OPEN->value, PayableStatus::OVERDUE->value])
                 ->whereDate('due_date', '<', $dateKey)
                 ->sum('amount');
 

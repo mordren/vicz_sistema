@@ -1,655 +1,699 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard — VICZ Implementos')
+@section('title', 'Painel de Gestão — VICZ Implementos')
 
 @section('content')
 @php
-    use App\Enums\PayableCategory;
     use App\Enums\AlertSeverity;
     use App\Support\BadgeHelper;
 @endphp
 
-<x-page-header title="Relatórios e Análises" subtitle="Visão financeira consolidada em {{ now()->format('Y') }}">
-    @can('viewAny', \App\Models\AccountReceivable::class)
-        <a href="{{ route('receivables.index') }}" class="btn btn-primary">Abrir Contas a Receber</a>
-    @endcan
-</x-page-header>
+@include('dashboard._header')
 
-<div class="report-toolbar mb-24">
-    <div class="report-chip">
-        <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
-        Últimos 6 meses
-    </div>
-    <div class="report-chip report-chip-green">
-        <svg viewBox="0 0 24 24"><path d="M3 17h18v2H3zm2.62-1l5.66-5.66 4 4L20.66 9 22 10.34l-6.72 6.72-4-4L6.95 17.4z"/></svg>
-        Previsibilidade ativa
-    </div>
-</div>
+@include('dashboard._summary-cards')
 
-<x-card title="Alertas prioritarios" class="mb-24">
-    @if($priorityAlerts->isEmpty())
-        <x-empty-state icon="alert" title="Sem alertas abertos" message="Nenhum alerta aberto no momento." />
-    @else
-        <div class="table-wrapper" style="border:none;border-radius:0;">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Severidade</th>
-                        <th>Titulo</th>
-                        <th>Data</th>
-                        <th>Acoes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($priorityAlerts as $alert)
-                        <tr class="{{ $alert->severity === AlertSeverity::CRITICAL ? 'dash-alert-critical' : '' }}">
-                            <td>
-                                <x-status-badge :variant="BadgeHelper::variant($alert->severity)" :label="BadgeHelper::label($alert->severity)" />
-                            </td>
-                            <td>
-                                <div style="font-weight:600;">{{ $alert->title }}</div>
-                                <div class="td-muted">{{ $alert->message }}</div>
-                            </td>
-                            <td>{{ $alert->created_at?->format('d/m/Y H:i') }}</td>
-                            <td>
-                                <a href="{{ route('alerts.show', $alert) }}" class="btn btn-ghost btn-sm">Abrir alerta</a>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+@include('dashboard._attention')
+
+<div class="db-main-grid">
+    @if($canSeeFinance)
+        @include('dashboard._finance')
     @endif
-</x-card>
 
-<x-card title="Insights de Clientes e OS" class="mb-24">
-    <div class="dashboard-insights-grid">
-        <div class="insight-mini-card">
-            <p class="insight-label">Clientes com vencidos</p>
-            <p class="insight-value">{{ $customersWithOverdue->count() }}</p>
-        </div>
-        <div class="insight-mini-card">
-            <p class="insight-label">Clientes bloqueados</p>
-            <p class="insight-value">{{ $blockedCustomers }}</p>
-        </div>
-        <div class="insight-mini-card">
-            <p class="insight-label">OS aguardando entrada</p>
-            <p class="insight-value">{{ $waitingDownPaymentWorkOrders }}</p>
-        </div>
-        <div class="insight-mini-card">
-            <p class="insight-label">OS entregues com saldo</p>
-            <p class="insight-value">{{ $deliveredPendingFinalBalance }}</p>
-        </div>
-    </div>
+    @include('dashboard._operations')
 
-    <div class="dashboard-insights-grid" style="margin-top: 16px;">
-        <section class="insight-panel">
-            <h3 class="insight-title">Top clientes por saldo em aberto</h3>
-            @if($topOpenBalanceCustomers->isEmpty())
-                <p class="insight-empty">Sem saldos em aberto no momento.</p>
-            @else
-                <ul class="insight-list">
-                    @foreach($topOpenBalanceCustomers as $customer)
-                        <li>
-                            <span>
-                                @if(!empty($customer->id))
-                                    <a href="{{ route('customers.show', $customer->id) }}">{{ $customer->name }}</a>
-                                @else
-                                    {{ $customer->name }}
-                                @endif
-                            </span>
-                            <strong class="td-mono">R$ {{ number_format((float) $customer->open_total, 2, ',', '.') }}</strong>
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
-        </section>
+    @include('dashboard._sales')
 
-        <section class="insight-panel">
-            <h3 class="insight-title">Clientes com maior atraso</h3>
-            @if($customersWithOverdue->isEmpty())
-                <p class="insight-empty">Nenhum cliente com recebível em atraso.</p>
-            @else
-                <ul class="insight-list">
-                    @foreach($customersWithOverdue as $customer)
-                        <li>
-                            <span>
-                                @if(!empty($customer->id))
-                                    <a href="{{ route('customers.show', $customer->id) }}">{{ $customer->name }}</a>
-                                @else
-                                    {{ $customer->name }}
-                                @endif
-                            </span>
-                            <strong class="td-mono" style="color: var(--error);">R$ {{ number_format((float) $customer->overdue_total, 2, ',', '.') }}</strong>
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
-        </section>
-    </div>
-</x-card>
-
-@if(!$canSeeFinance)
-    <x-error-state title="Visão financeira restrita" message="Seu perfil não possui acesso aos indicadores financeiros completos deste painel." />
-@else
-    <div class="report-bento">
-        <section class="report-card score-card">
-            <p class="report-label">Previsibilidade Financeira</p>
-            <h2 class="report-score">{{ number_format($dashboardData['predictabilityScore'], 1, ',', '.') }}%</h2>
-
-            <div class="report-progress-track">
-                <div class="report-progress-fill" style="width: {{ $dashboardData['predictabilityScore'] }}%;"></div>
-            </div>
-
-            <p class="report-trend {{ $dashboardData['variation'] >= 0 ? 'positive' : 'negative' }}">
-                <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
-                {{ $dashboardData['variation'] >= 0 ? '+' : '' }}{{ number_format($dashboardData['variation'], 1, ',', '.') }}% vs mês anterior
-            </p>
-
-            <div class="report-kpi-grid">
-                <div>
-                    <span class="kpi-name">Previsto</span>
-                    <strong class="kpi-value">R$ {{ number_format($dashboardData['pendingReceivables'], 0, ',', '.') }}</strong>
-                </div>
-                <div>
-                    <span class="kpi-name">Atrasado</span>
-                    <strong class="kpi-value danger">R$ {{ number_format($dashboardData['overdueReceivables'], 0, ',', '.') }}</strong>
-                </div>
-            </div>
-        </section>
-
-        <section class="report-card chart-card">
-            <div class="report-head">
-                <h3>Recebimentos vs Despesas</h3>
-                <div class="report-legend">
-                    <span><i class="legend-box legend-primary"></i>Recebimentos</span>
-                    <span><i class="legend-box legend-secondary"></i>Despesas</span>
-                </div>
-            </div>
-
-            <div class="bar-chart-wrap">
-                @foreach($dashboardData['months'] as $month)
-                    @php
-                        $key = $month['key'];
-                        $income = (float) ($dashboardData['receivedByMonth'][$key] ?? 0);
-                        $expense = (float) ($dashboardData['expenseByMonth'][$key] ?? 0);
-                        $incomeHeight = max(6, (int) (($income / $dashboardData['maxChart']) * 100));
-                        $expenseHeight = max(6, (int) (($expense / $dashboardData['maxChart']) * 100));
-                    @endphp
-                    <div class="bar-stack">
-                        <div class="bar-column" title="Recebimentos: R$ {{ number_format($income, 2, ',', '.') }} | Despesas: R$ {{ number_format($expense, 2, ',', '.') }}">
-                            <div class="bar bar-primary" style="height: {{ $incomeHeight }}%;"></div>
-                            <div class="bar bar-secondary" style="height: {{ $expenseHeight }}%;"></div>
-                        </div>
-                        <span class="bar-label">{{ $month['label'] }}</span>
-                    </div>
-                @endforeach
-            </div>
-        </section>
-
-        <section class="report-card categories-card">
-            <div class="report-head">
-                <h3>Despesas por Categoria</h3>
-            </div>
-
-            @php
-                $expenseCategories = collect($dashboardData['expenseCategories'] ?? []);
-                $maxCategoryTotal = max(1, (float) ($expenseCategories->isNotEmpty() ? $expenseCategories->max('total') : 1));
-            @endphp
-
-            <div class="categories-list">
-                @forelse($expenseCategories as $categoryRow)
-                    @php
-                        $categoryValue = $categoryRow->category;
-                        $cat = $categoryValue instanceof PayableCategory
-                            ? $categoryValue
-                            : PayableCategory::tryFrom((string) $categoryValue);
-                        $catLabel = $cat?->label() ?? (is_object($categoryValue) && property_exists($categoryValue, 'value') ? $categoryValue->value : (string) $categoryValue);
-                        $catTotal = (float) $categoryRow->total;
-                        $pct = max(5, (int) (($catTotal / $maxCategoryTotal) * 100));
-                    @endphp
-                    <div class="category-item">
-                        <div class="category-top">
-                            <span>{{ $catLabel }}</span>
-                            <strong>R$ {{ number_format($catTotal, 2, ',', '.') }}</strong>
-                        </div>
-                        <div class="category-track">
-                            <div class="category-fill" style="width: {{ $pct }}%;"></div>
-                        </div>
-                    </div>
-                @empty
-                    <x-empty-state icon="report" title="Sem despesas mapeadas" message="Ainda não há categorias para exibir neste período." />
-                @endforelse
-            </div>
-        </section>
-
-        <section class="report-card history-card">
-            <div class="report-head">
-                <h3>Histórico de Recebimentos</h3>
-                <a href="{{ route('receivables.index') }}" class="report-link">Ver tudo</a>
-            </div>
-
-            @if($dashboardData['recentReceivables']->isEmpty())
-                <x-empty-state icon="default" title="Sem recebíveis recentes" message="Os lançamentos mais recentes aparecerão aqui." />
-            @else
-                <div class="table-wrapper" style="border:none;border-radius:0;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Cliente</th>
-                                <th>Data</th>
-                                <th class="text-right">Valor</th>
-                                <th class="text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($dashboardData['recentReceivables'] as $receivable)
-                                <tr>
-                                    <td style="font-weight:600;">{{ $receivable->customer }}</td>
-                                    <td>{{ ($receivable->received_date ?? $receivable->expected_date)?->format('d/m/Y') }}</td>
-                                    <td class="text-right td-mono">R$ {{ number_format((float) ($receivable->received_amount ?? $receivable->expected_amount), 2, ',', '.') }}</td>
-                                    <td class="text-center">
-                                        <x-status-badge
-                                            :variant="BadgeHelper::variant($receivable->status)"
-                                            :label="BadgeHelper::label($receivable->status)"
-                                        />
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </section>
-    </div>
-@endif
+    @include('dashboard._customers')
+</div>
 
 @endsection
 
 @push('styles')
 <style>
-.report-toolbar {
+/* ═══════════════════════════════════════════════════════════
+   Dashboard — VICZ Implementos
+   All colors use tokens from designer/SKILL.md only.
+   No third-party palette values (no Tailwind swatches).
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Derived local constants (still on-brand) ── */
+/* ok    → --secondary #006d41 + --secondary-container #90f4b7  */
+/* warn  → lighter than error-container; uses same red family   */
+/* info  → --status-info #0D6EFD at 8% opacity on white         */
+/* critical → --error-container #ffdad6 + --on-error-container  */
+
+/* ── Page header ──────────────────────────────────────────── */
+.db-page-header {
     display: flex;
-    gap: 10px;
+    align-items: flex-start;
+    justify-content: space-between;
     flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
-.report-chip {
+.db-page-header__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.db-page-header__title {
+    font-family: var(--font-brand);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.15;
+    margin: 0;
+}
+
+.db-page-header__subtitle {
+    font-size: 14px;
+    color: var(--on-surface-variant);
+    margin: 2px 0 0;
+}
+
+.db-page-header__date {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    border: 1px solid var(--outline-variant);
-    background: var(--surface);
+    gap: 5px;
+    font-size: 12px;
     color: var(--on-surface-variant);
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 500;
+    margin-top: 6px;
 }
 
-.report-chip svg {
-    width: 14px;
-    height: 14px;
-    fill: currentColor;
+.db-page-header__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
 }
 
-.report-chip-green {
-    background: var(--secondary-container);
-    border-color: #6ac58e;
-    color: var(--on-secondary-container);
-}
-
-.report-bento {
+/* ── KPI cards ───────────────────────────────────────────── */
+.db-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
 }
 
-.report-card {
+.db-kpi-card {
     background: var(--surface);
     border: 1px solid var(--outline-variant);
+    border-left-width: 4px;
     border-radius: var(--radius-md);
-    padding: 20px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    min-width: 0;
+    transition: box-shadow .15s;
 }
 
-.score-card { grid-column: span 4; }
-.chart-card { grid-column: span 8; }
-.categories-card { grid-column: span 5; }
-.history-card { grid-column: span 7; padding: 0; overflow: hidden; }
+.db-kpi-card:hover { box-shadow: var(--shadow); }
 
-.report-label {
+/* All positive/ok states → secondary green */
+.db-kpi-card--ok       { border-left-color: var(--secondary); }
+.db-kpi-card--positive { border-left-color: var(--secondary); }
+.db-kpi-card--alert    { border-left-color: var(--secondary); }
+/* Warning/danger → error red */
+.db-kpi-card--warning  { border-left-color: var(--error); }
+.db-kpi-card--danger   { border-left-color: var(--error); }
+/* Informational → status-info blue */
+.db-kpi-card--info     { border-left-color: var(--status-info); }
+
+.db-kpi-card__icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-container);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.db-kpi-card__icon svg { width: 18px; height: 18px; fill: var(--on-surface-variant); }
+
+.db-kpi-card__body { min-width: 0; flex: 1; }
+
+.db-kpi-card__label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--on-surface-variant);
+    margin-bottom: 4px;
+}
+
+.db-kpi-card__value {
+    display: block;
+    font-family: var(--font-brand);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--deep-navy);
+    line-height: 1.15;
+    font-feature-settings: "tnum";
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.db-kpi-card__value--danger { color: var(--error); }
+
+.db-kpi-card__sub {
+    display: block;
+    font-size: 11px;
+    color: var(--on-surface-variant);
+    margin-top: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.db-kpi-card__sub--danger {
+    color: var(--on-error-container);
+    font-weight: 600;
+}
+
+/* ── Attention cards ─────────────────────────────────────── */
+.db-attention-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.db-attention-card {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    width: 100%;
+}
+
+/* Critical → full error-container (#ffdad6) */
+.db-attention-card--critical {
+    background: var(--error-container);
+    border-color: #ffb4ab;
+}
+/* Warning → lighter red tint (same family, less intense) */
+.db-attention-card--warning {
+    background: #fff0ec;
+    border-color: #ffd0c8;
+}
+
+.db-attention-card__icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.db-attention-card__icon svg { width: 20px; height: 20px; }
+.db-attention-card--critical .db-attention-card__icon svg { fill: var(--on-error-container); }
+.db-attention-card--warning  .db-attention-card__icon svg { fill: var(--error); }
+
+.db-attention-card__body { flex: 1; min-width: 0; }
+
+.db-attention-card__title {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--on-surface);
+    margin: 0 0 3px;
+}
+
+.db-attention-card--critical .db-attention-card__title { color: var(--on-error-container); }
+.db-attention-card--warning  .db-attention-card__title { color: var(--error); }
+
+.db-attention-card__desc {
+    font-size: 12px;
+    color: var(--on-surface-variant);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.db-attention-card__amount {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 4px 0 0;
+    color: var(--on-error-container);
+    font-feature-settings: "tnum";
+}
+
+.db-attention-card__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    text-decoration: none;
+    white-space: nowrap;
+    grid-column: 2;
+    justify-self: start;
+}
+
+.db-attention-card--critical .db-attention-card__action { color: var(--on-error-container); }
+.db-attention-card--warning  .db-attention-card__action { color: var(--error); }
+
+/* ── Main 2-column grid ──────────────────────────────────── */
+.db-main-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+/* ── Section helpers ─────────────────────────────────────── */
+.db-section-header { margin-bottom: 10px; }
+
+.db-section-label {
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .06em;
     text-transform: uppercase;
     color: var(--on-surface-variant);
-    margin-bottom: 6px;
 }
 
-.report-score {
+.db-section-title {
     font-family: var(--font-brand);
-    font-size: 40px;
-    line-height: 1.05;
-    color: var(--secondary);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--deep-navy);
+    margin: 0;
 }
 
-.report-progress-track {
-    width: 100%;
-    height: 8px;
-    border-radius: var(--radius-full);
-    background: var(--surface-container);
-    margin: 16px 0 10px;
+.db-section-divider {
+    height: 1px;
+    background: var(--outline-variant);
+    margin: 16px 0;
 }
 
-.report-progress-fill {
-    height: 100%;
-    border-radius: var(--radius-full);
-    background: linear-gradient(90deg, var(--secondary), #2f9967);
-}
-
-.report-trend {
-    display: inline-flex;
-    gap: 6px;
-    align-items: center;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.report-trend svg {
-    width: 14px;
-    height: 14px;
-    fill: currentColor;
-}
-
-.report-trend.positive { color: var(--status-success); }
-.report-trend.negative { color: var(--error); }
-
-.report-kpi-grid {
-    margin-top: 16px;
+/* ── Finance mini-metrics ────────────────────────────────── */
+.db-finance-metrics {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
 }
 
-.kpi-name {
+.db-finance-metric {
+    text-align: center;
+    padding: 10px 8px;
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-sm);
+    background: var(--surface-muted);
+}
+
+.db-finance-metric__label {
     display: block;
-    font-size: 11px;
-    color: var(--on-surface-variant);
-    text-transform: uppercase;
+    font-size: 10px;
+    font-weight: 700;
     letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--on-surface-variant);
+    margin-bottom: 4px;
 }
 
-.kpi-value {
+.db-finance-metric__value {
     display: block;
-    margin-top: 2px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--primary);
+    font-family: var(--font-brand);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--deep-navy);
+    font-feature-settings: "tnum";
 }
 
-.kpi-value.danger { color: var(--error); }
+.db-finance-metric__value--green { color: var(--status-success); }
+.db-finance-metric__value--red   { color: var(--error); }
+/* warn uses error color — no amber token in design system */
+.db-finance-metric__value--warn  { color: var(--error); }
 
-.report-head {
+/* ── Bar chart ───────────────────────────────────────────── */
+.db-chart-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 14px;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
-.report-head h3 {
+.db-chart-title {
     font-family: var(--font-brand);
-    font-size: 18px;
+    font-size: 14px;
+    font-weight: 600;
     color: var(--deep-navy);
+    margin: 0;
 }
 
-.report-legend {
+.db-chart-legend {
     display: flex;
     gap: 12px;
     font-size: 12px;
     color: var(--on-surface-variant);
+    align-items: center;
 }
 
-.legend-box {
+.db-legend-dot {
     display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     margin-right: 4px;
+    vertical-align: middle;
 }
 
-.legend-primary { background: var(--primary); }
-.legend-secondary { background: var(--secondary-container); }
+.db-legend-dot--green { background: var(--status-success); }
+.db-legend-dot--red   { background: var(--error); }
 
-.bar-chart-wrap {
-    height: 230px;
+.db-bar-chart {
     display: flex;
-    align-items: end;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: 10px;
+    gap: 4px;
+    height: 136px;
+    overflow: hidden;
 }
 
-.bar-stack {
+.db-bar-col {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
 }
 
-.bar-column {
+.db-bar-wrap {
     width: 100%;
-    max-width: 28px;
-    height: 185px;
+    height: 96px;
     display: flex;
     flex-direction: column;
-    justify-content: end;
+    justify-content: flex-end;
     gap: 2px;
+    min-width: 0;
 }
 
-.bar {
+.db-bar {
     width: 100%;
+    border-radius: 2px 2px 0 0;
     transition: height .3s ease;
 }
 
-.bar-primary {
-    background: var(--primary);
-    border-radius: 4px 4px 0 0;
-}
+/* No opacity reduction — use tokens at full strength */
+.db-bar--green { background: var(--status-success); }
+.db-bar--red   { background: var(--error); }
 
-.bar-secondary {
-    background: var(--secondary-container);
-    border-radius: 0 0 4px 4px;
-}
-
-.bar-label {
-    font-size: 11px;
+.db-bar-label {
+    font-size: 10px;
     color: var(--on-surface-variant);
     font-weight: 600;
 }
 
-.categories-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.category-item {
-    border: 1px solid var(--outline-variant);
-    border-radius: var(--radius-sm);
-    padding: 10px 12px;
-}
-
-.category-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 10px;
-    margin-bottom: 6px;
-}
-
-.category-top span {
-    font-size: 13px;
+.db-bar-net {
+    font-size: 10px;
     font-weight: 600;
-    color: var(--on-surface);
-}
-
-.category-top strong {
-    font-size: 13px;
-    color: var(--deep-navy);
     font-feature-settings: "tnum";
 }
 
-.category-track {
-    width: 100%;
-    height: 6px;
-    border-radius: var(--radius-full);
-    background: var(--surface-container);
+.db-bar-net--pos { color: var(--status-success); }
+.db-bar-net--neg { color: var(--error); }
+
+/* ── Ops / Sales mini-metrics ────────────────────────────── */
+.db-ops-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
 }
 
-.category-fill {
+.db-ops-metric {
+    text-align: center;
+    padding: 10px 8px;
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-sm);
+    background: var(--surface-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.db-ops-metric strong {
+    display: block;
+    font-family: var(--font-brand);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--deep-navy);
+}
+
+.db-ops-metric span {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--on-surface-variant);
+    line-height: 1.3;
+}
+
+/* ok → secondary green family */
+.db-ops-metric--ok {
+    border-color: var(--secondary-container);
+    background: #eef8f3;
+}
+.db-ops-metric--ok strong { color: var(--secondary); }
+
+/* danger → full error system */
+.db-ops-metric--danger {
+    border-color: #ffb4ab;
+    background: var(--error-container);
+}
+.db-ops-metric--danger strong { color: var(--on-error-container); }
+
+/* warn → lighter red tint (same red family, less severe) */
+.db-ops-metric--warn {
+    border-color: #ffd0c8;
+    background: #fff0ec;
+}
+.db-ops-metric--warn strong { color: var(--error); }
+
+/* info → status-info blue family */
+.db-ops-metric--info {
+    border-color: #9fc4fd;
+    background: #ebf2ff;
+}
+.db-ops-metric--info strong { color: var(--status-info); }
+
+/* ── Progress bars ───────────────────────────────────────── */
+.db-progress-track {
+    width: 100%;
+    height: 5px;
+    border-radius: var(--radius-full);
+    background: var(--surface-container-high);
+    overflow: hidden;
+    margin-bottom: 2px;
+}
+
+.db-progress-fill {
     height: 100%;
     border-radius: var(--radius-full);
-    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    background: var(--secondary);
+    transition: width .3s;
 }
 
-.report-link {
-    color: var(--secondary);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .04em;
+.db-progress-fill--danger { background: var(--error); }
+
+/* ── Status badges (inline pills) ────────────────────────── */
+.db-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .06em;
     text-transform: uppercase;
+    vertical-align: middle;
+    margin-left: 4px;
 }
 
-.dash-alert-critical td {
-    background: var(--error-container) !important;
-}
+.db-badge--danger  { background: var(--error);        color: var(--on-primary); }
+.db-badge--warn    { background: #ffd0c8;              color: var(--on-error-container); }
+.db-badge--info    { background: var(--status-info);   color: var(--on-primary); }
+.db-badge--neutral { background: var(--surface-container-high); color: var(--on-surface-variant); }
 
-.dashboard-insights-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
-}
+/* ── Table row states ────────────────────────────────────── */
+.db-row-critical td     { background: var(--error-container) !important; }
+.db-row-overdue  td     { background: var(--error-container) !important; }
+.db-row-warning  td     { background: #fff0ec !important; }
+.dash-alert-critical td { background: var(--error-container) !important; }
 
-.insight-mini-card {
-    border: 1px solid var(--outline-variant);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    padding: 12px;
-}
+/* Inline cell colors */
+.td-danger { color: var(--on-error-container); font-weight: 600; }
+.td-warn   { color: var(--error);              font-weight: 600; }
 
-.insight-label {
-    margin: 0;
+/* ── Type badges (Receber / Pagar) ───────────────────────── */
+.db-type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
     font-size: 11px;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-    color: var(--on-surface-variant);
-    font-weight: 600;
-}
-
-.insight-value {
-    margin: 8px 0 0;
-    font-size: 24px;
-    line-height: 1;
-    color: var(--deep-navy);
-    font-family: var(--font-brand);
     font-weight: 700;
+    letter-spacing: .03em;
 }
 
-.insight-panel {
-    grid-column: span 2;
+/* income → secondary-container green */
+.db-type-badge--in  {
+    background: var(--secondary-container);
+    color: var(--on-secondary-container);
+}
+
+/* expense → error-container red */
+.db-type-badge--out {
+    background: var(--error-container);
+    color: var(--on-error-container);
+}
+
+/* ── Sales funnel ────────────────────────────────────────── */
+.db-funnel { display: flex; flex-direction: column; gap: 8px; }
+
+.db-funnel-stage { display: flex; align-items: center; gap: 8px; }
+
+.db-funnel-label {
+    width: 90px;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--on-surface);
+    text-align: right;
+}
+
+.db-funnel-bar-wrap {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.db-funnel-bar {
+    height: 20px;
+    border-radius: var(--radius-sm);
+    transition: width .3s;
+    min-width: 4px;
+}
+
+.db-funnel-count  { font-size: 12px; font-weight: 700; color: var(--on-surface); white-space: nowrap; }
+.db-funnel-amount { font-size: 11px; color: var(--on-surface-variant); font-feature-settings: "tnum"; white-space: nowrap; }
+
+/* ── Probability badge ───────────────────────────────────── */
+.db-prob-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--surface-container);
+    color: var(--on-surface);
+}
+
+/* ── Customer panels ─────────────────────────────────────── */
+.db-customers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.db-customer-panel {
     border: 1px solid var(--outline-variant);
     border-radius: var(--radius-sm);
-    padding: 12px;
+    padding: 12px 14px;
 }
 
-.insight-title {
-    margin: 0 0 10px;
-    color: var(--deep-navy);
-    font-size: 15px;
-    font-family: var(--font-brand);
-}
-
-.insight-empty {
-    margin: 0;
-    color: var(--on-surface-variant);
-    font-size: 13px;
-}
-
-.insight-list {
-    margin: 0;
+.db-customer-list {
+    margin: 8px 0 0;
     padding: 0;
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
-.insight-list li {
+.db-customer-list li {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    padding-bottom: 8px;
+    gap: 10px;
+    padding-bottom: 6px;
     border-bottom: 1px dashed var(--outline-variant);
-}
-
-.insight-list li:last-child {
-    border-bottom: 0;
-    padding-bottom: 0;
-}
-
-.insight-list a {
-    color: var(--primary);
-    text-decoration: none;
     font-size: 13px;
+}
+
+.db-customer-list li:last-child { border-bottom: none; padding-bottom: 0; }
+
+.db-customer-list a {
+    color: var(--deep-navy);
     font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 140px;
 }
 
-.insight-list a:hover {
-    text-decoration: underline;
-}
+.db-customer-list a:hover { text-decoration: underline; }
 
+/* ════════════════════════════════════════════════════════════
+   Responsive — follows design system breakpoints
+   Desktop ≥ 1100px  |  Tablet 768–1099px  |  Mobile < 768px
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Tablet (≤ 1100px): collapse 2-col grid to 1-col ─────── */
 @media (max-width: 1100px) {
-    .score-card,
-    .chart-card,
-    .categories-card,
-    .history-card {
-        grid-column: span 12;
-    }
-
-    .dashboard-insights-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .insight-panel {
-        grid-column: span 2;
-    }
+    .db-main-grid            { grid-template-columns: 1fr; }
+    .db-kpi-grid             { grid-template-columns: repeat(3, 1fr); }
 }
 
-@media (max-width: 640px) {
-    .report-score { font-size: 34px; }
-    .report-head {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .bar-chart-wrap {
-        height: 200px;
-        gap: 6px;
-    }
-    .bar-column {
-        max-width: 22px;
-        height: 160px;
-    }
+/* ── Small tablet (≤ 768px) ──────────────────────────────── */
+@media (max-width: 768px) {
+    .db-kpi-grid             { grid-template-columns: repeat(2, 1fr); }
+    .db-finance-metrics      { grid-template-columns: repeat(2, 1fr); }
+    .db-ops-metrics          { grid-template-columns: repeat(2, 1fr); }
+    .db-attention-grid       { grid-template-columns: 1fr; }
+    .db-customers-grid       { grid-template-columns: repeat(2, 1fr); }
+    .db-bar-chart            { height: 116px; }
+    .db-bar-wrap             { height: 76px; }
+    .db-funnel-label         { width: 72px; font-size: 11px; }
+    .db-funnel-amount        { display: none; }
+}
 
-    .dashboard-insights-grid {
-        grid-template-columns: 1fr;
-    }
+/* ── Mobile (≤ 480px) ────────────────────────────────────── */
+@media (max-width: 480px) {
+    .db-page-header          { flex-direction: column; }
+    .db-page-header__actions { width: 100%; }
+    .db-page-header__title   { font-size: 22px; }
 
-    .insight-panel {
-        grid-column: span 1;
-    }
+    .db-kpi-grid             { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .db-kpi-card             { padding: 12px; }
+    .db-kpi-card__value      { font-size: 18px; }
+
+    .db-finance-metrics      { grid-template-columns: repeat(2, 1fr); }
+    .db-ops-metrics          { grid-template-columns: repeat(2, 1fr); }
+    .db-customers-grid       { grid-template-columns: 1fr; }
+
+    .db-bar-chart            { height: 96px; }
+    .db-bar-wrap             { height: 60px; }
+    .db-bar-net              { display: none; }
+
+    .db-funnel-label         { display: none; }
 }
 </style>
 @endpush
