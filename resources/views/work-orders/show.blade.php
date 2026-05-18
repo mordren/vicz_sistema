@@ -142,6 +142,7 @@
                                     <th>Vencimento</th>
                                     <th class="text-right">Valor</th>
                                     <th>Status</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -157,12 +158,22 @@
                                                 :label="\App\Support\BadgeHelper::label($payable->status)"
                                             />
                                         </td>
+                                        <td><a href="{{ route('payables.show', $payable) }}" class="btn btn-ghost btn-sm">Abrir</a></td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                 @endif
+
+                @can('create', \App\Models\AccountPayable::class)
+                    <div style="margin-top:14px;border-top:1px solid var(--outline-variant);padding-top:14px;">
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-nova-conta-pagar').style.display='flex';">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;"><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                            Adicionar pagamento vinculado
+                        </button>
+                    </div>
+                @endcan
             </x-card>
 
             <x-card title="Contas a Receber Vinculadas">
@@ -178,6 +189,7 @@
                                     <th>Previsão</th>
                                     <th class="text-right">Valor</th>
                                     <th>Status</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -193,12 +205,22 @@
                                                 :label="\App\Support\BadgeHelper::label($receivable->status)"
                                             />
                                         </td>
+                                        <td><a href="{{ route('receivables.show', $receivable) }}" class="btn btn-ghost btn-sm">Abrir</a></td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                 @endif
+
+                @can('create', \App\Models\AccountReceivable::class)
+                    <div style="margin-top:14px;border-top:1px solid var(--outline-variant);padding-top:14px;">
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-nova-conta-receber').style.display='flex';">
+                            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;"><path d="M19 13H13v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                            Adicionar recebimento vinculado
+                        </button>
+                    </div>
+                @endcan
             </x-card>
 
             <x-card title="Anexos, fotos e desenhos">
@@ -212,7 +234,7 @@
                                     <div style="font-size:13px;font-weight:600;">{{ $attachment->file_name }}</div>
                                     <div class="td-muted">{{ number_format($attachment->size / 1024, 1, ',', '.') }} KB • {{ $attachment->created_at?->format('d/m/Y H:i') }}</div>
                                 </div>
-                                <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($attachment->storage_path) }}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>
+                                <a href="{{ asset('storage/' . $attachment->storage_path) }}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>
                             </div>
                         @endforeach
                     </div>
@@ -244,7 +266,12 @@
 
                             <div class="form-group">
                                 <label class="form-label" for="progress_percentage">Progresso (%)</label>
-                                <input id="progress_percentage" name="progress_percentage" type="number" min="0" max="100" class="form-control @error('progress_percentage') is-invalid @enderror" value="{{ old('progress_percentage', $workOrder->progress_percentage) }}" required>
+                                <input id="progress_percentage" name="progress_percentage" type="number" min="0" max="100"
+                                    maxlength="3"
+                                    class="form-control @error('progress_percentage') is-invalid @enderror"
+                                    value="{{ old('progress_percentage', $workOrder->progress_percentage) }}"
+                                    required
+                                    oninput="if(this.value>100)this.value=100;if(this.value<0)this.value=0;">
                                 @error('progress_percentage')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
 
@@ -318,6 +345,194 @@
             @endif
         </div>
     </div>
+
+    {{-- Modal: Nova Conta a Pagar --}}
+    @can('create', \App\Models\AccountPayable::class)
+    <div id="modal-nova-conta-pagar"
+         style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(5,20,54,.45);align-items:center;justify-content:center;padding:16px;">
+        <div style="background:var(--surface);border-radius:var(--radius-md);padding:24px;width:100%;max-width:560px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-family:var(--font-brand);font-size:16px;font-weight:700;color:var(--primary);margin:0;">Nova Conta a Pagar</h3>
+                <button type="button" onclick="closePagar()" style="background:none;border:none;cursor:pointer;padding:4px;">
+                    <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:var(--on-surface-variant);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+            <div id="modal-pagar-error" style="display:none;" class="flash flash-error" role="alert"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mp_supplier">Fornecedor *</label>
+                    <input id="mp_supplier" type="text" class="form-control" value="{{ $workOrder->customer }}" maxlength="160" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mp_category">Categoria *</label>
+                    <select id="mp_category" class="form-control form-select" required>
+                        <option value="">Selecione...</option>
+                        @foreach(\App\Enums\PayableCategory::cases() as $cat)
+                            <option value="{{ $cat->value }}">{{ $cat->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;grid-column:1/-1;">
+                    <label class="form-label" for="mp_description">Descrição *</label>
+                    <input id="mp_description" type="text" class="form-control" placeholder="Ex: Chapas para carroceria OS {{ $workOrder->number }}" maxlength="255" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mp_issue_date">Data de emissão *</label>
+                    <input id="mp_issue_date" type="date" class="form-control" value="{{ now()->toDateString() }}" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mp_due_date">Vencimento *</label>
+                    <input id="mp_due_date" type="date" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mp_amount">Valor (R$) *</label>
+                    <input id="mp_amount" type="number" step="0.01" min="0.01" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mp_notes">Observações</label>
+                    <input id="mp_notes" type="text" class="form-control" maxlength="5000">
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+                <button type="button" id="mp_submit" class="btn btn-primary" onclick="submitPagar()">Salvar pagamento</button>
+                <button type="button" class="btn btn-ghost" onclick="closePagar()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    @endcan
+
+    {{-- Modal: Nova Conta a Receber --}}
+    @can('create', \App\Models\AccountReceivable::class)
+    <div id="modal-nova-conta-receber"
+         style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(5,20,54,.45);align-items:center;justify-content:center;padding:16px;">
+        <div style="background:var(--surface);border-radius:var(--radius-md);padding:24px;width:100%;max-width:560px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-family:var(--font-brand);font-size:16px;font-weight:700;color:var(--primary);margin:0;">Novo Recebimento Vinculado</h3>
+                <button type="button" onclick="closeReceber()" style="background:none;border:none;cursor:pointer;padding:4px;">
+                    <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:var(--on-surface-variant);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+            <div id="modal-receber-error" style="display:none;" class="flash flash-error" role="alert"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mr_customer">Cliente *</label>
+                    <input id="mr_customer" type="text" class="form-control" value="{{ $workOrder->customer }}" maxlength="255" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mr_type">Tipo *</label>
+                    <select id="mr_type" class="form-control form-select" required>
+                        <option value="">Selecione...</option>
+                        @foreach(\App\Enums\ReceivableType::cases() as $type)
+                            <option value="{{ $type->value }}">{{ $type->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;grid-column:1/-1;">
+                    <label class="form-label" for="mr_description">Descrição *</label>
+                    <input id="mr_description" type="text" class="form-control" placeholder="Ex: Entrada OS {{ $workOrder->number }}" maxlength="255" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mr_expected_date">Previsão de recebimento *</label>
+                    <input id="mr_expected_date" type="date" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" for="mr_expected_amount">Valor esperado (R$) *</label>
+                    <input id="mr_expected_amount" type="number" step="0.01" min="0.01" class="form-control" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;grid-column:1/-1;">
+                    <label class="form-label" for="mr_notes">Observações</label>
+                    <input id="mr_notes" type="text" class="form-control" maxlength="5000">
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px;">
+                <button type="button" id="mr_submit" class="btn btn-primary" onclick="submitReceber()">Salvar recebimento</button>
+                <button type="button" class="btn btn-ghost" onclick="closeReceber()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    @endcan
+
+@push('scripts')
+<script>
+function closePagar() { document.getElementById('modal-nova-conta-pagar').style.display = 'none'; }
+function closeReceber() { document.getElementById('modal-nova-conta-receber').style.display = 'none'; }
+
+function showModalError(elId, msg) {
+    var el = document.getElementById(elId);
+    el.textContent = msg;
+    el.style.display = '';
+}
+
+function submitPagar() {
+    var btn = document.getElementById('mp_submit');
+    var errEl = document.getElementById('modal-pagar-error');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    var body = new FormData();
+    body.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+    body.append('work_order_id', '{{ $workOrder->id }}');
+    body.append('supplier', document.getElementById('mp_supplier').value);
+    body.append('category', document.getElementById('mp_category').value);
+    body.append('description', document.getElementById('mp_description').value);
+    body.append('issue_date', document.getElementById('mp_issue_date').value);
+    body.append('due_date', document.getElementById('mp_due_date').value);
+    body.append('amount', document.getElementById('mp_amount').value);
+    var notes = document.getElementById('mp_notes').value;
+    if (notes) body.append('notes', notes);
+
+    fetch('{{ route('payables.store') }}', { method: 'POST', body: body, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+        .then(function(res) {
+            if (res.ok) return res.json();
+            return res.json().then(function(d) { throw d; });
+        })
+        .then(function() { window.location.reload(); })
+        .catch(function(err) {
+            var msg = 'Erro ao salvar. Verifique os dados.';
+            if (err && err.errors) msg = Object.values(err.errors).flat().join(' ');
+            else if (err && err.message) msg = err.message;
+            showModalError('modal-pagar-error', msg);
+            btn.disabled = false;
+            btn.textContent = 'Salvar pagamento';
+        });
+}
+
+function submitReceber() {
+    var btn = document.getElementById('mr_submit');
+    var errEl = document.getElementById('modal-receber-error');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    var body = new FormData();
+    body.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+    body.append('work_order_id', '{{ $workOrder->id }}');
+    body.append('customer', document.getElementById('mr_customer').value);
+    body.append('receivable_type', document.getElementById('mr_type').value);
+    body.append('description', document.getElementById('mr_description').value);
+    body.append('expected_date', document.getElementById('mr_expected_date').value);
+    body.append('expected_amount', document.getElementById('mr_expected_amount').value);
+    var notes = document.getElementById('mr_notes').value;
+    if (notes) body.append('notes', notes);
+
+    fetch('{{ route('receivables.store') }}', { method: 'POST', body: body, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+        .then(function(res) {
+            if (res.ok) return res.json();
+            return res.json().then(function(d) { throw d; });
+        })
+        .then(function() { window.location.reload(); })
+        .catch(function(err) {
+            var msg = 'Erro ao salvar. Verifique os dados.';
+            if (err && err.errors) msg = Object.values(err.errors).flat().join(' ');
+            else if (err && err.message) msg = err.message;
+            showModalError('modal-receber-error', msg);
+            btn.disabled = false;
+            btn.textContent = 'Salvar recebimento';
+        });
+}
+</script>
+@endpush
 @endsection
 
 @push('styles')

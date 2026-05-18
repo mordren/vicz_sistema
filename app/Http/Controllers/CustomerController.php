@@ -11,6 +11,7 @@ use App\Models\AccountReceivable;
 use App\Models\Customer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -40,11 +41,11 @@ class CustomerController extends Controller
         }
 
         if ($filters['cpf'] !== '') {
-            $query->where('cpf', $filters['cpf']);
+            $query->where('cpf', 'like', $filters['cpf'] . '%');
         }
 
         if ($filters['cnpj'] !== '') {
-            $query->where('cnpj', $filters['cnpj']);
+            $query->where('cnpj', 'like', $filters['cnpj'] . '%');
         }
 
         if ($filters['phone'] !== '') {
@@ -96,13 +97,19 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function store(StoreCustomerRequest $request): RedirectResponse
+    public function store(StoreCustomerRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $payload = $request->validated();
         $payload['created_by'] = $request->user()->id;
         $payload['updated_by'] = $request->user()->id;
 
         $customer = Customer::query()->create($payload);
+
+        Cache::increment('dashboard_customer_version');
+
+        if ($request->expectsJson()) {
+            return response()->json(['id' => $customer->id, 'name' => $customer->name]);
+        }
 
         return redirect()
             ->route('customers.show', $customer)
@@ -168,6 +175,8 @@ class CustomerController extends Controller
 
         $customer->update($payload);
 
+        Cache::increment('dashboard_customer_version');
+
         return redirect()
             ->route('customers.show', $customer)
             ->with('success', 'Cliente atualizado com sucesso.');
@@ -188,6 +197,8 @@ class CustomerController extends Controller
         }
 
         $customer->delete();
+
+        Cache::increment('dashboard_customer_version');
 
         return redirect()
             ->route('customers.index')

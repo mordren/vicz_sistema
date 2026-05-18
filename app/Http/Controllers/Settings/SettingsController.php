@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -100,6 +101,8 @@ class SettingsController extends Controller
         ]);
 
         $this->persistSettings($validated);
+
+        Cache::increment('dashboard_finance_version');
 
         return redirect()
             ->route('settings.financial')

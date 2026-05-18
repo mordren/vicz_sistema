@@ -13,6 +13,7 @@ use App\Models\WorkOrder;
 use App\Services\AccountPayableService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class AccountPayableController extends Controller
@@ -178,7 +179,7 @@ class AccountPayableController extends Controller
         ]);
     }
 
-    public function store(StoreAccountPayableRequest $request): RedirectResponse
+    public function store(StoreAccountPayableRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $result = $this->service->create(
             $request->validated(),
@@ -189,6 +190,15 @@ class AccountPayableController extends Controller
         $message = $result['count'] > 1
             ? 'Conta a pagar criada em '.$result['count'].' parcelas com sucesso.'
             : 'Conta a pagar criada com sucesso.';
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message]);
+        }
+
+        $redirectTo = $request->input('redirect_to');
+        if ($redirectTo && (str_starts_with($redirectTo, '/') || str_starts_with($redirectTo, config('app.url')))) {
+            return redirect($redirectTo)->with('success', $message);
+        }
 
         return redirect()
             ->route('payables.show', $result['firstPayable'])
@@ -281,6 +291,8 @@ class AccountPayableController extends Controller
             $request->user()
         );
 
+        Cache::increment('dashboard_finance_version');
+
         return redirect()
             ->route('payables.show', $payable)
             ->with('success', 'Conta marcada como paga.');
@@ -302,6 +314,8 @@ class AccountPayableController extends Controller
 
         $this->service->cancel($payable, $request->user(), $request->input('cancel_reason'));
 
+        Cache::increment('dashboard_finance_version');
+
         return redirect()
             ->route('payables.show', $payable)
             ->with('success', 'Conta cancelada com sucesso.');
@@ -318,6 +332,8 @@ class AccountPayableController extends Controller
         }
 
         $this->service->cancel($payable, auth()->user());
+
+        Cache::increment('dashboard_finance_version');
 
         return redirect()
             ->route('payables.index')

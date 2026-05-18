@@ -14,6 +14,7 @@ use App\Models\WorkOrder;
 use App\Services\AccountReceivableService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
@@ -213,9 +214,18 @@ class AccountReceivableController extends Controller
         ]);
     }
 
-    public function store(StoreAccountReceivableRequest $request): RedirectResponse
+    public function store(StoreAccountReceivableRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $receivable = $this->service->create($request->validated(), $request->user());
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Conta a receber criada com sucesso.']);
+        }
+
+        $redirectTo = $request->input('redirect_to');
+        if ($redirectTo && (str_starts_with($redirectTo, '/') || str_starts_with($redirectTo, config('app.url')))) {
+            return redirect($redirectTo)->with('success', 'Conta a receber criada com sucesso.');
+        }
 
         return redirect()
             ->route('receivables.show', $receivable)
@@ -310,6 +320,8 @@ class AccountReceivableController extends Controller
             $request->user()
         );
 
+        Cache::increment('dashboard_finance_version');
+
         return redirect()
             ->route('receivables.show', $receivable)
             ->with('success', 'Recebível marcado como recebido.');
@@ -331,6 +343,8 @@ class AccountReceivableController extends Controller
 
         $this->service->cancel($receivable, $request->user(), $request->input('cancel_reason'));
 
+        Cache::increment('dashboard_finance_version');
+
         return redirect()
             ->route('receivables.show', $receivable)
             ->with('success', 'Recebível cancelado com sucesso.');
@@ -347,6 +361,8 @@ class AccountReceivableController extends Controller
         }
 
         $this->service->cancel($receivable, auth()->user());
+
+        Cache::increment('dashboard_finance_version');
 
         return redirect()
             ->route('receivables.index')

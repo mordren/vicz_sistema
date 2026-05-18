@@ -117,7 +117,7 @@
                                     <div style="font-size:13px;font-weight:600;">{{ $attachment->file_name }}</div>
                                     <div class="td-muted">{{ number_format($attachment->size / 1024, 1, ',', '.') }} KB • {{ $attachment->created_at?->format('d/m/Y H:i') }}</div>
                                 </div>
-                                <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($attachment->storage_path) }}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>
+                                <a href="{{ asset('storage/' . $attachment->storage_path) }}" target="_blank" class="btn btn-ghost btn-sm">Abrir</a>
                             </div>
                         @endforeach
                     </div>

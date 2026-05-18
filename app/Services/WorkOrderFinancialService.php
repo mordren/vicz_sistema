@@ -17,10 +17,19 @@ class WorkOrderFinancialService
 
     public function recalculateFinancials(WorkOrder $workOrder, ?User $actor = null): WorkOrder
     {
-        $actualCost = (float) AccountPayable::query()
+        // actual_cost = paid payables (paid_amount) + open/overdue payables (amount)
+        // Cancelled payables are excluded from the margin calculation
+        $paidCost = (float) AccountPayable::query()
             ->where('work_order_id', $workOrder->id)
-            ->where('status', PayableStatus::PAID)
+            ->where('status', PayableStatus::PAID->value)
             ->sum('paid_amount');
+
+        $pendingCost = (float) AccountPayable::query()
+            ->where('work_order_id', $workOrder->id)
+            ->whereIn('status', [PayableStatus::OPEN->value, PayableStatus::OVERDUE->value])
+            ->sum('amount');
+
+        $actualCost = $paidCost + $pendingCost;
 
         $receivedAmount = (float) AccountReceivable::query()
             ->where('work_order_id', $workOrder->id)

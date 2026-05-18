@@ -7,6 +7,15 @@
         @can('update', $customer)
             <a href="{{ route('customers.edit', $customer) }}" class="btn btn-secondary">Editar</a>
         @endcan
+        @can('delete', $customer)
+            @if($customer->workOrders->isEmpty() && $customer->proposals->isEmpty() && $customer->receivables->isEmpty())
+                <form method="POST" action="{{ route('customers.destroy', $customer) }}" onsubmit="return confirm('Excluir este cliente permanentemente?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            @endif
+        @endcan
         <a href="{{ route('customers.index') }}" class="btn btn-ghost">Voltar</a>
     </x-page-header>
 

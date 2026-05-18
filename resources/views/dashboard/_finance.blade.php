@@ -57,21 +57,76 @@
                 <span><i class="db-legend-dot db-legend-dot--red"></i>Saídas</span>
             </div>
         </div>
-        <div class="db-bar-chart">
-            @foreach($cashFlowChart['rows'] as $row)
-                <div class="db-bar-col">
-                    <div class="db-bar-wrap" title="Entradas: R$ {{ number_format($row['income'], 0, ',', '.') }} | Saídas: R$ {{ number_format($row['expense'], 0, ',', '.') }}">
-                        <div class="db-bar db-bar--green" style="height:{{ $row['income_pct'] }}%"></div>
-                        <div class="db-bar db-bar--red" style="height:{{ $row['expense_pct'] }}%"></div>
-                    </div>
-                    <span class="db-bar-label">{{ $row['label'] }}</span>
-                    @php $net = $row['net']; @endphp
-                    <span class="db-bar-net {{ $net >= 0 ? 'db-bar-net--pos' : 'db-bar-net--neg' }}">
-                        {{ $net >= 0 ? '+' : '' }}{{ number_format($net, 0, ',', '.') }}
-                    </span>
-                </div>
-            @endforeach
+        <div style="position:relative;height:160px;">
+            <canvas id="cashflow-chart-canvas"></canvas>
         </div>
+        @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+        <script>
+        (function () {
+            var rows = @json($cashFlowChart['rows']);
+            var labels  = rows.map(function(r){ return r.label; });
+            var income  = rows.map(function(r){ return r.income; });
+            var expense = rows.map(function(r){ return r.expense; });
+
+            var ctx = document.getElementById('cashflow-chart-canvas').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Entradas',
+                            data: income,
+                            backgroundColor: '#006d41',
+                            borderRadius: 4,
+                            borderSkipped: false,
+                        },
+                        {
+                            label: 'Saídas',
+                            data: expense,
+                            backgroundColor: '#b00020',
+                            borderRadius: 4,
+                            borderSkipped: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ctx.dataset.label + ': R$ ' +
+                                        ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 0 });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 11 }, color: '#6b7080' }
+                        },
+                        y: {
+                            grid: { color: '#e8eaed' },
+                            ticks: {
+                                font: { size: 11 },
+                                color: '#6b7080',
+                                callback: function(v) {
+                                    return 'R$ ' + (v / 1000).toFixed(0) + 'k';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        })();
+        </script>
+        @endpush
     @endif
 
     {{-- Upcoming due items --}}

@@ -44,13 +44,13 @@ class CashFlowForecastModuleTest extends TestCase
             ])
             ->assertRedirect(route('reports.cash-flow', ['period' => 30, 'include_weighted_proposals' => false]));
 
-        $this->assertSame('12345.67', Setting::query()->where('key', 'cash_forecast.current_balance')->value('value'));
+        $this->assertSame('12345.67', Setting::query()->where('key', 'cash_balance')->value('value'));
     }
 
     public function test_negative_projected_balance_days_are_flagged(): void
     {
         $user = User::factory()->finance()->create();
-        Setting::set('cash_forecast.current_balance', '100.00');
+        Setting::set('cash_balance', '100.00');
 
         AccountPayable::factory()->create([
             'status' => PayableStatus::OPEN,
@@ -71,7 +71,7 @@ class CashFlowForecastModuleTest extends TestCase
     public function test_paid_and_received_and_cancelled_records_are_excluded_from_confirmed_flow(): void
     {
         $user = User::factory()->finance()->create();
-        Setting::set('cash_forecast.current_balance', '0.00');
+        Setting::set('cash_balance', '0.00');
 
         AccountPayable::factory()->create([
             'status' => PayableStatus::OPEN,
@@ -163,7 +163,7 @@ class CashFlowForecastModuleTest extends TestCase
     public function test_weighted_proposal_scenario_is_separated_and_optional(): void
     {
         $user = User::factory()->finance()->create();
-        Setting::set('cash_forecast.current_balance', '500.00');
+        Setting::set('cash_balance', '500.00');
 
         Proposal::factory()->create([
             'status' => ProposalStatus::NEGOTIATING,

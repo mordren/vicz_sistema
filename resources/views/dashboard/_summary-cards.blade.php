@@ -1,4 +1,23 @@
 <div class="db-kpi-grid">
+    {{-- Saldo de Caixa (entradas realizadas − saídas realizadas) --}}
+    @if($canSeeFinance)
+        @php $cashBal = $summaryCards['actualCashBalance']; @endphp
+        <div class="db-kpi-card {{ $cashBal < 0 ? 'db-kpi-card--danger' : 'db-kpi-card--ok' }}" style="grid-column:1/-1;">
+            <div class="db-kpi-card__icon">
+                <svg viewBox="0 0 24 24"><path d="M21 7H3C1.9 7 1 7.9 1 9v10c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 11H3V9h18v9zM10 14H4v-2h6v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zM4 5h16v2H4z"/></svg>
+            </div>
+            <div class="db-kpi-card__body">
+                <span class="db-kpi-card__label">Saldo de Caixa Atual</span>
+                <strong class="db-kpi-card__value {{ $cashBal < 0 ? 'db-kpi-card__value--danger' : '' }}">
+                    R$ {{ number_format(abs($cashBal), 2, ',', '.') }}{{ $cashBal < 0 ? ' negativo' : '' }}
+                </strong>
+                <span class="db-kpi-card__sub">
+                    Total recebido menos total pago (todos os lançamentos baixados)
+                </span>
+            </div>
+        </div>
+    @endif
+
     {{-- A Receber em Aberto --}}
     @if($canSeeFinance)
         <div class="db-kpi-card {{ $summaryCards['receivablesOverdueTotal'] > 0 ? 'db-kpi-card--alert' : 'db-kpi-card--positive' }}">

@@ -67,11 +67,11 @@ class WorkOrderModuleTest extends TestCase
 
         $workOrder->refresh();
 
-        $this->assertSame('320.00', (string) $workOrder->actual_cost);
+        $this->assertSame('1220.00', (string) $workOrder->actual_cost);
         $this->assertSame('700.00', (string) $workOrder->received_amount);
         $this->assertSame('300.00', (string) $workOrder->receivable_balance);
         $this->assertSame('550.0000', (string) $workOrder->estimated_margin);
-        $this->assertSame('680.0000', (string) $workOrder->actual_margin);
+        $this->assertSame('-220.0000', (string) $workOrder->actual_margin);
     }
 
     public function test_mark_as_delivered_requires_actual_delivery_date(): void

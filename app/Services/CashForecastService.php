@@ -13,7 +13,7 @@ use Carbon\Carbon;
 
 class CashForecastService
 {
-    public const SETTING_KEY_CURRENT_BALANCE = 'cash_forecast.current_balance';
+    public const SETTING_KEY_CURRENT_BALANCE = 'cash_balance';
 
     /**
      * @return int[]

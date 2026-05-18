@@ -30,7 +30,9 @@ class DashboardController extends Controller
         $canSeeFinance = $user->can('viewAny', AccountReceivable::class)
             && $user->can('viewAny', AccountPayable::class);
 
-        $cacheKey = 'dashboard_v6_' . $user->id . '_' . ($canSeeFinance ? 'fin' : 'ops');
+        $customerVersion = Cache::get('dashboard_customer_version', 0);
+        $financeVersion  = Cache::get('dashboard_finance_version', 0);
+        $cacheKey = 'dashboard_v7_' . $user->id . '_' . ($canSeeFinance ? 'fin' : 'ops') . '_cv' . $customerVersion . '_fv' . $financeVersion;
 
         $cached = Cache::remember($cacheKey, now()->addSeconds(60), function () use ($canSeeFinance): array {
             return [
@@ -87,6 +89,7 @@ class DashboardController extends Controller
             'receivedThisMonth'            => 0.0,
             'paidThisMonth'                => 0.0,
             'projectedCashBalance'         => 0.0,
+            'actualCashBalance'            => 0.0,
         ];
 
         $deliveredVal  = WorkOrderStatus::DELIVERED->value;
@@ -222,6 +225,17 @@ class DashboardController extends Controller
             $openNetReceivable = $cards['receivablesOpenTotal'] + $cards['receivablesOverdueTotal'];
             $openNetPayable    = $cards['payablesOpenTotal'] + $cards['payablesOverdueTotal'];
             $cards['projectedCashBalance'] = $openNetReceivable - $openNetPayable;
+
+            $totalReceived = (float) AccountReceivable::query()
+                ->where('status', ReceivableStatus::RECEIVED->value)
+                ->sum('received_amount');
+
+            $totalPaid = (float) AccountPayable::query()
+                ->where('status', PayableStatus::PAID->value)
+                ->sum('paid_amount');
+
+            $initialBalance = (float) \App\Models\Setting::get('cash_balance', 0);
+            $cards['actualCashBalance'] = $initialBalance + $totalReceived - $totalPaid;
         }
 
         return $cards;
