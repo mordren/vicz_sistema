@@ -15,6 +15,8 @@
 
         $canCancel = auth()->user()->can('update', $receivable)
             && in_array($receivable->status, [ReceivableStatus::EXPECTED, ReceivableStatus::OVERDUE], true);
+
+        $canDelete = auth()->user()->can('delete', $receivable);
     @endphp
 
     <x-page-header
@@ -24,12 +26,19 @@
         @if($canEdit)
             <a href="{{ route('receivables.edit', $receivable) }}" class="btn btn-secondary">Editar</a>
         @endif
+        @if($canDelete)
+            <form method="POST" action="{{ route('receivables.destroy', $receivable) }}" style="display:inline;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Excluir este recebível permanentemente? Esta ação não pode ser desfeita.')">Excluir</button>
+            </form>
+        @endif
         <a href="{{ route('receivables.index') }}" class="btn btn-ghost">Voltar</a>
     </x-page-header>
 
-    <div class="receivable-show-layout" style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start;">
+    <div class="receivable-show-layout layout-aside" style="gap:16px;align-items:start;">
         <x-card title="Dados do Recebível">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="grid-2" style="gap:14px;">
                 <div>
                     <div class="form-label">Cliente</div>
                     <div>{{ $receivable->customer }}</div>
@@ -70,7 +79,7 @@
 
             @if($receivable->status === ReceivableStatus::RECEIVED)
                 <hr class="divider">
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                <div class="grid-3" style="gap:12px;">
                     <div>
                         <div class="form-label">Data de Recebimento</div>
                         <div>{{ $receivable->received_date?->format('d/m/Y') ?? '-' }}</div>
@@ -188,12 +197,3 @@
     @endif
 @endsection
 
-@push('styles')
-<style>
-@media (max-width: 960px) {
-    .receivable-show-layout {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
-@endpush

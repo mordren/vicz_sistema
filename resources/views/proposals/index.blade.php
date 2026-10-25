@@ -14,7 +14,7 @@
         @endcan
     </x-page-header>
 
-    <div class="stat-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));">
+    <div class="stat-grid">
         <x-stat-card
             label="Propostas abertas"
             :value="$summaryCards['openProposals']"
@@ -62,7 +62,8 @@
     </div>
 
     <x-filter-bar label="Filtros">
-        <form id="proposal-filter-form" method="GET" action="{{ route('proposals.index') }}" class="proposals-filter-grid" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr auto auto;gap:8px;width:100%;align-items:end;">
+        <form id="proposal-filter-form" method="GET" action="{{ route('proposals.index') }}" class="proposals-filter-grid filter-grid">
+            <x-sort-inputs :sorting="$sorting" />
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" for="customer_id">Cliente</label>
                 <select id="customer_id" name="customer_id" class="form-control form-select">
@@ -138,14 +139,14 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Proposta</th>
-                            <th>Cliente</th>
-                            <th>Responsável</th>
-                            <th>Fechamento</th>
-                            <th>Probabilidade</th>
-                            <th class="text-right">Valor</th>
-                            <th class="text-right">Ponderado</th>
-                            <th>Status</th>
+                            <x-sort-th column="number" label="Proposta" :sorting="$sorting" />
+                            <x-sort-th column="customer" label="Cliente" :sorting="$sorting" />
+                            <x-sort-th column="sales_owner" label="Responsável" :sorting="$sorting" />
+                            <x-sort-th column="expected_close_date" label="Fechamento" :sorting="$sorting" />
+                            <x-sort-th column="close_probability" label="Probabilidade" :sorting="$sorting" />
+                            <x-sort-th column="amount" label="Valor" :sorting="$sorting" class="text-right" />
+                            <x-sort-th column="weighted_amount" label="Ponderado" :sorting="$sorting" class="text-right" />
+                            <x-sort-th column="status" label="Status" :sorting="$sorting" />
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -247,31 +248,6 @@
     font-feature-settings: "tnum";
 }
 
-@media (max-width: 1300px) {
-    .stat-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .proposals-filter-grid {
-        grid-template-columns: 1fr 1fr 1fr 1fr !important;
-    }
-}
-
-@media (max-width: 900px) {
-    .stat-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .proposals-filter-grid {
-        grid-template-columns: 1fr 1fr !important;
-    }
-}
-
-@media (max-width: 640px) {
-    .proposals-filter-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
 </style>
 @endpush
 

@@ -6,6 +6,7 @@ use App\Enums\AlertSeverity;
 use App\Enums\AlertStatus;
 use App\Models\Alert;
 use App\Services\AlertGenerationService;
+use App\Support\ListSorter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -31,10 +32,7 @@ class AlertController extends Controller
             $this->generationService->generate();
         }
 
-        $query = Alert::query()
-            ->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'WARNING' THEN 1 ELSE 2 END")
-            ->orderByRaw("CASE status WHEN 'OPEN' THEN 0 WHEN 'READ' THEN 1 ELSE 2 END")
-            ->orderByDesc('created_at');
+        $query = Alert::query();
 
         if ($filters['type'] !== '') {
             $query->where('type', $filters['type']);
@@ -63,6 +61,20 @@ class AlertController extends Controller
             });
         }
 
+        $sorting = ListSorter::apply($query, $request, [
+            'severity' => ListSorter::byPriority('severity', ['CRITICAL', 'WARNING', 'INFO']),
+            'title' => 'title',
+            'type' => 'type',
+            'status' => ListSorter::byPriority('status', ['OPEN', 'READ', 'RESOLVED']),
+            'created_at' => 'created_at',
+        ]);
+
+        if ($sorting['sort'] === null) {
+            $query->orderByRaw("CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'WARNING' THEN 1 ELSE 2 END")
+                ->orderByRaw("CASE status WHEN 'OPEN' THEN 0 WHEN 'READ' THEN 1 ELSE 2 END")
+                ->orderByDesc('created_at');
+        }
+
         $alerts = $query->paginate(20)->withQueryString();
 
         $types = Alert::query()
@@ -78,6 +90,7 @@ class AlertController extends Controller
 
         return view('alerts.index', [
             'alerts' => $alerts,
+            'sorting' => $sorting,
             'filters' => $filters,
             'types' => $types,
             'severities' => AlertSeverity::cases(),

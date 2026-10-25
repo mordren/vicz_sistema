@@ -18,7 +18,7 @@
             @csrf
             @method('PATCH')
 
-            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+            <div class="grid-2" style="gap: 16px;">
                 <div class="form-group">
                     <label class="form-label">Probabilidade Padrão (%)</label>
                     <input type="number" min="0" max="100" name="default_proposal_probability" class="form-control @error('default_proposal_probability') is-invalid @enderror" value="{{ old('default_proposal_probability', $settings->get('default_proposal_probability')?->value ?? 50) }}" required>

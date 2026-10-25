@@ -12,6 +12,7 @@ use App\Models\AccountReceivable;
 use App\Models\Customer;
 use App\Models\WorkOrder;
 use App\Services\AccountReceivableService;
+use App\Support\ListSorter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -32,10 +33,7 @@ class AccountReceivableController extends Controller
         $hasWorkOrderCustomerId = Schema::hasColumn('work_orders', 'customer_id');
         $hasCustomersTable = Schema::hasTable('customers');
 
-        $query = AccountReceivable::query()
-            ->orderByRaw("CASE status WHEN 'OVERDUE' THEN 0 WHEN 'EXPECTED' THEN 1 WHEN 'RECEIVED' THEN 2 ELSE 3 END")
-            ->orderBy('expected_date')
-            ->orderByDesc('id');
+        $query = AccountReceivable::query();
 
         if ($hasReceivableCustomerId) {
             $workOrderSelect = $hasWorkOrderCustomerId
@@ -78,6 +76,23 @@ class AccountReceivableController extends Controller
 
         if ($filters['work_order_id'] !== '') {
             $query->where('work_order_id', (int) $filters['work_order_id']);
+        }
+
+        $sorting = ListSorter::apply($query, $request, [
+            'customer' => 'customer',
+            'description' => 'description',
+            'type' => 'receivable_type',
+            'expected_date' => 'expected_date',
+            'received_date' => 'received_date',
+            'amount' => 'expected_amount',
+            'status' => ListSorter::byPriority('status', ['OVERDUE', 'EXPECTED', 'RECEIVED', 'CANCELLED']),
+            'payment_method' => 'payment_method',
+        ], $status === ReceivableStatus::RECEIVED ? 'received_date' : null, 'desc');
+
+        if ($sorting['sort'] === null) {
+            $query->orderByRaw("CASE status WHEN 'OVERDUE' THEN 0 WHEN 'EXPECTED' THEN 1 WHEN 'RECEIVED' THEN 2 ELSE 3 END")
+                ->orderBy('expected_date')
+                ->orderByDesc('id');
         }
 
         $receivables = $query->paginate(15)->withQueryString();
@@ -172,6 +187,7 @@ class AccountReceivableController extends Controller
 
         return view('receivables.index', [
             'receivables' => $receivables,
+            'sorting' => $sorting,
             'overdueCustomers' => $overdueCustomers,
             'workOrders' => $workOrders,
             'customers' => $customers,
@@ -352,20 +368,14 @@ class AccountReceivableController extends Controller
 
     public function destroy(AccountReceivable $receivable): RedirectResponse
     {
-        $this->authorize('update', $receivable);
+        $this->authorize('delete', $receivable);
 
-        if ($receivable->status === ReceivableStatus::RECEIVED) {
-            return redirect()
-                ->route('receivables.show', $receivable)
-                ->with('error', 'Recebível já recebido não pode ser cancelado.');
-        }
-
-        $this->service->cancel($receivable, auth()->user());
+        $this->service->delete($receivable, auth()->user());
 
         Cache::increment('dashboard_finance_version');
 
         return redirect()
             ->route('receivables.index')
-            ->with('success', 'Recebível cancelado com sucesso.');
+            ->with('success', 'Recebível excluído com sucesso.');
     }
 }

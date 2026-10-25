@@ -9,7 +9,7 @@
     />
 
     <x-filter-bar label="Filtros do relatorio">
-        <form id="report-filter-form" method="GET" action="{{ request()->url() }}" class="report-filter-grid" style="display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr 1.5fr 2fr auto auto;gap:8px;width:100%;align-items:end;">
+        <form id="report-filter-form" method="GET" action="{{ request()->url() }}" class="report-filter-grid filter-grid">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" for="report">Relatorio</label>
                 <select id="report" name="report" class="form-control form-select">
@@ -88,7 +88,7 @@
     </x-card>
 
     <x-card title="Totais" class="mt-16">
-        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;">
+        <div class="grid-4" style="gap:8px;">
             @foreach($report['totals'] as $label => $value)
                 <div style="border:1px solid var(--outline-variant);border-radius:var(--radius-sm);padding:12px;">
                     <div class="form-label">{{ str_replace('_', ' ', ucfirst($label)) }}</div>
@@ -104,22 +104,6 @@
         </div>
     </x-card>
 @endsection
-
-@push('styles')
-<style>
-@media (max-width: 1200px) {
-    .report-filter-grid {
-        grid-template-columns: 1fr 1fr 1fr !important;
-    }
-}
-
-@media (max-width: 760px) {
-    .report-filter-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
-</style>
-@endpush
 
 @push('scripts')
 <script>

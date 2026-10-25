@@ -12,6 +12,7 @@ use App\Models\Customer;
 use App\Models\Proposal;
 use App\Models\User;
 use App\Services\ProposalConversionService;
+use App\Support\ListSorter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -41,10 +42,7 @@ class ProposalController extends Controller
         ];
 
         $query = Proposal::query()
-            ->with(['salesOwner:id,name'])
-            ->orderByRaw("CASE status WHEN 'NEGOTIATING' THEN 0 WHEN 'SENT' THEN 1 WHEN 'APPROVED' THEN 2 WHEN 'LOST' THEN 3 ELSE 4 END")
-            ->orderBy('expected_close_date')
-            ->orderByDesc('id');
+            ->with(['salesOwner:id,name']);
 
         if ($hasWorkOrderProposalId) {
             $query->with(['workOrder:id,proposal_id,number']);
@@ -80,6 +78,26 @@ class ProposalController extends Controller
 
         if ($filters['probability_max'] !== '' && is_numeric($filters['probability_max'])) {
             $query->where('close_probability', '<=', (int) $filters['probability_max']);
+        }
+
+        $sorting = ListSorter::apply($query, $request, [
+            'number' => 'number',
+            'customer' => 'customer',
+            'sales_owner' => fn ($q, $dir) => $q->orderBy(
+                User::query()->select('name')->whereColumn('users.id', 'proposals.sales_owner_id'),
+                $dir,
+            ),
+            'expected_close_date' => 'expected_close_date',
+            'close_probability' => 'close_probability',
+            'amount' => 'amount',
+            'weighted_amount' => 'weighted_amount',
+            'status' => ListSorter::byPriority('status', ['NEGOTIATING', 'SENT', 'APPROVED', 'LOST', 'CANCELLED']),
+        ]);
+
+        if ($sorting['sort'] === null) {
+            $query->orderByRaw("CASE status WHEN 'NEGOTIATING' THEN 0 WHEN 'SENT' THEN 1 WHEN 'APPROVED' THEN 2 WHEN 'LOST' THEN 3 ELSE 4 END")
+                ->orderBy('expected_close_date')
+                ->orderByDesc('id');
         }
 
         $proposals = $query->paginate(15)->withQueryString();
@@ -121,6 +139,7 @@ class ProposalController extends Controller
 
         return view('proposals.index', [
             'proposals' => $proposals,
+            'sorting' => $sorting,
             'filters' => $filters,
             'statuses' => ProposalStatus::cases(),
             'summaryCards' => $summaryCards,
@@ -148,6 +167,7 @@ class ProposalController extends Controller
         return view('proposals.create', [
             'salesOwners' => $salesOwners,
             'customers' => $customers,
+            'proposal' => new Proposal(),
         ]);
     }
 
@@ -396,9 +416,13 @@ class ProposalController extends Controller
 
     public function destroy(Proposal $proposal): RedirectResponse
     {
+        $this->authorize('delete', $proposal);
+
+        $proposal->delete();
+
         return redirect()
-            ->route('proposals.show', $proposal)
-            ->with('error', 'Exclusão física não permitida. Use as ações de cancelamento/perda.');
+            ->route('proposals.index')
+            ->with('success', 'Proposta excluída com sucesso.');
     }
 
     private function generateProposalNumber(): string

@@ -14,7 +14,7 @@
         @endcan
     </x-page-header>
 
-    <div class="stat-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));">
+    <div class="stat-grid">
         <x-stat-card
             label="Saldo em aberto"
             value="R$ {{ number_format($summaryCards['openTotal'], 2, ',', '.') }}"
@@ -62,7 +62,8 @@
     </div>
 
     <x-filter-bar label="Filtros">
-        <form method="GET" action="{{ route('payables.index') }}" class="payables-filter-grid" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 2fr auto auto;gap:8px;width:100%;align-items:end;">
+        <form method="GET" action="{{ route('payables.index') }}" class="payables-filter-grid filter-grid">
+            <x-sort-inputs :sorting="$sorting" />
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" for="supplier">Fornecedor</label>
                 <input id="supplier" name="supplier" type="text" class="form-control" value="{{ $filters['supplier'] }}" placeholder="Nome do fornecedor">
@@ -123,7 +124,7 @@
         </form>
     </x-filter-bar>
 
-    <div class="payables-layout" style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;">
+    <div class="payables-layout layout-aside layout-aside--list" style="gap:16px;align-items:start;">
         <x-card title="Contas ({{ $payables->total() }})">
             @if($payables->isEmpty())
                 <x-empty-state
@@ -136,15 +137,16 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Fornecedor</th>
-                                <th>Descricao</th>
-                                <th>Categoria</th>
-                                <th>Parcela</th>
+                                <x-sort-th column="supplier" label="Fornecedor" :sorting="$sorting" />
+                                <x-sort-th column="description" label="Descrição" :sorting="$sorting" />
+                                <x-sort-th column="category" label="Categoria" :sorting="$sorting" />
+                                <x-sort-th column="installment" label="Parcela" :sorting="$sorting" />
                                 <th>OS</th>
-                                <th>Vencimento</th>
-                                <th class="text-right">Valor</th>
-                                <th>Status</th>
-                                <th>Acoes</th>
+                                <x-sort-th column="due_date" label="Vencimento" :sorting="$sorting" />
+                                <x-sort-th column="payment_date" label="Pago em" :sorting="$sorting" />
+                                <x-sort-th column="amount" label="Valor" :sorting="$sorting" class="text-right" />
+                                <x-sort-th column="status" label="Status" :sorting="$sorting" />
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -159,8 +161,9 @@
                                     </td>
                                     <td>{{ $payable->category->label() }}</td>
                                     <td>{{ $payable->installment_number }}/{{ $payable->total_installments }}</td>
-                                    <td>{{ $payable->workOrder?->number ?? '-' }}</td>
+                                    <td class="td-mono">{{ $payable->workOrder?->number ?? '-' }}</td>
                                     <td>{{ $payable->due_date->format('d/m/Y') }}</td>
+                                    <td>{{ $payable->payment_date?->format('d/m/Y') ?? '-' }}</td>
                                     <td class="text-right td-mono">R$ {{ number_format((float) $payable->amount, 2, ',', '.') }}</td>
                                     <td>
                                         <x-status-badge
@@ -225,36 +228,3 @@
     </div>
 @endsection
 
-@push('styles')
-<style>
-@media (max-width: 1240px) {
-    .stat-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .payables-filter-grid {
-        grid-template-columns: 1fr 1fr 1fr 1fr;
-    }
-}
-
-@media (max-width: 900px) {
-    .stat-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .payables-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .payables-filter-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-@media (max-width: 640px) {
-    .payables-filter-grid {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
-@endpush

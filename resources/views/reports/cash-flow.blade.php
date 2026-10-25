@@ -5,7 +5,7 @@
 @section('content')
     <x-page-header title="Previsão de Fluxo de Caixa" subtitle="Saldo projetado diário com cenários de risco" />
 
-    <div class="stat-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+    <div class="stat-grid">
         <x-stat-card
             label="Saldo inicial"
             value="R$ {{ number_format((float) $forecast['currentBalance'], 2, ',', '.') }}"
@@ -44,7 +44,7 @@
     </div>
 
     <x-filter-bar label="Parâmetros da previsão">
-        <form id="cash-forecast-filter" method="GET" action="{{ route('reports.cash-flow') }}" class="cash-forecast-filter-grid" style="display:grid;grid-template-columns:220px 220px auto auto;gap:8px;width:100%;align-items:end;">
+        <form id="cash-forecast-filter" method="GET" action="{{ route('reports.cash-flow') }}" class="cash-forecast-filter-grid filter-grid">
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" for="period">Período</label>
                 <select id="period" name="period" class="form-control form-select">
@@ -68,7 +68,7 @@
     </x-filter-bar>
 
     <x-card title="Saldo Atual de Caixa/Bancos">
-        <form method="POST" action="{{ route('reports.cash-flow.update-balance') }}" class="cash-balance-form" style="display:grid;grid-template-columns:240px auto;gap:12px;align-items:end;">
+        <form method="POST" action="{{ route('reports.cash-flow.update-balance') }}" class="cash-balance-form filter-grid">
             @csrf
             @method('PATCH')
             <input type="hidden" name="period" value="{{ $filters['period'] }}">
@@ -327,15 +327,6 @@
     line-height: 1.4;
     max-height: 280px;
     overflow: auto;
-}
-
-/* ── Responsive ─────────────────────────────────────── */
-@media (max-width: 1080px) {
-    .cash-forecast-filter-grid { grid-template-columns: 1fr 1fr !important; }
-    .cash-balance-form          { grid-template-columns: 1fr !important; }
-}
-@media (max-width: 640px) {
-    .cash-forecast-filter-grid  { grid-template-columns: 1fr !important; }
 }
 </style>
 @endpush

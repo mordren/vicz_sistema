@@ -36,10 +36,10 @@
         </div>
     @endif
 
-    <div class="work-order-show-layout" style="display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start;">
+    <div class="work-order-show-layout layout-aside" style="gap:16px;align-items:start;">
         <div style="display:flex;flex-direction:column;gap:16px;">
             <x-card title="Dados Operacionais">
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+                <div class="grid-3" style="gap:14px;">
                     <div>
                         <div class="form-label">Cliente</div>
                         <div>{{ $workOrder->customer }}</div>
@@ -87,7 +87,7 @@
             </x-card>
 
             <x-card title="Resumo Financeiro">
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                <div class="grid-3" style="gap:12px;">
                     <div>
                         <div class="form-label">Valor contratado</div>
                         <div class="td-mono">R$ {{ number_format((float) $workOrder->contracted_amount, 2, ',', '.') }}</div>
@@ -358,7 +358,7 @@
                 </button>
             </div>
             <div id="modal-pagar-error" style="display:none;" class="flash flash-error" role="alert"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="grid-2" style="gap:12px;">
                 <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label" for="mp_supplier">Fornecedor *</label>
                     <input id="mp_supplier" type="text" class="form-control" value="{{ $workOrder->customer }}" maxlength="160" required>
@@ -413,7 +413,7 @@
                 </button>
             </div>
             <div id="modal-receber-error" style="display:none;" class="flash flash-error" role="alert"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="grid-2" style="gap:12px;">
                 <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label" for="mr_customer">Cliente *</label>
                     <input id="mr_customer" type="text" class="form-control" value="{{ $workOrder->customer }}" maxlength="255" required>
@@ -556,12 +556,6 @@ function submitReceber() {
 
 .wo-negative {
     color: var(--error);
-}
-
-@media (max-width: 1120px) {
-    .work-order-show-layout {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 700px) {

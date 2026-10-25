@@ -18,7 +18,7 @@
             @csrf
             @method('PATCH')
 
-            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+            <div class="grid-2" style="gap: 16px;">
                 <div class="form-group" style="grid-column: span 2;">
                     <label class="form-label">Nome da Empresa</label>
                     <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror" value="{{ old('company_name', $settings->get('company_name')?->value) }}" required>

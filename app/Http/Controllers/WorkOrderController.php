@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\WorkOrder;
 use App\Services\WorkOrderFinancialService;
 use App\Services\WorkOrderReceivableAutomationService;
+use App\Support\ListSorter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -42,10 +43,7 @@ class WorkOrderController extends Controller
         ];
 
         $query = WorkOrder::query()
-            ->with(['responsibleUser:id,name'])
-            ->orderByRaw("CASE status WHEN 'IN_PRODUCTION' THEN 0 WHEN 'READY_FOR_DELIVERY' THEN 1 WHEN 'DELIVERED' THEN 2 WHEN 'CANCELLED' THEN 3 ELSE 4 END")
-            ->orderBy('expected_delivery_date')
-            ->orderByDesc('id');
+            ->with(['responsibleUser:id,name']);
 
         if ($hasWorkOrderCustomerId && $hasCustomersTable) {
             $query->with('customerRef:id,name');
@@ -74,6 +72,26 @@ class WorkOrderController extends Controller
         if ($filters['overdue_only']) {
             $query->whereDate('expected_delivery_date', '<', now()->toDateString())
                 ->whereNotIn('status', [WorkOrderStatus::DELIVERED, WorkOrderStatus::CANCELLED]);
+        }
+
+        $sorting = ListSorter::apply($query, $request, [
+            'number' => 'number',
+            'customer' => 'customer',
+            'service_type' => 'service_type',
+            'responsible' => fn ($q, $dir) => $q->orderBy(
+                User::query()->select('name')->whereColumn('users.id', 'work_orders.responsible_user_id'),
+                $dir,
+            ),
+            'progress' => 'progress_percentage',
+            'expected_delivery_date' => 'expected_delivery_date',
+            'receivable_balance' => 'receivable_balance',
+            'status' => ListSorter::byPriority('status', array_map(fn (WorkOrderStatus $s) => $s->value, WorkOrderStatus::cases())),
+        ]);
+
+        if ($sorting['sort'] === null) {
+            $query->orderByRaw("CASE status WHEN 'IN_PRODUCTION' THEN 0 WHEN 'READY_FOR_DELIVERY' THEN 1 WHEN 'DELIVERED' THEN 2 WHEN 'CANCELLED' THEN 3 ELSE 4 END")
+                ->orderBy('expected_delivery_date')
+                ->orderByDesc('id');
         }
 
         $workOrders = $query->paginate(15)->withQueryString();
@@ -116,6 +134,7 @@ class WorkOrderController extends Controller
 
         return view('work-orders.index', [
             'workOrders' => $workOrders,
+            'sorting' => $sorting,
             'statuses' => WorkOrderStatus::cases(),
             'filters' => $filters,
             'summaryCards' => $summaryCards,

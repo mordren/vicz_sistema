@@ -12,7 +12,8 @@
     </x-page-header>
 
     <x-filter-bar label="Filtros">
-        <form method="GET" action="{{ route('customers.index') }}" class="customers-filter-grid" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr auto auto;gap:8px;align-items:end;">
+        <form method="GET" action="{{ route('customers.index') }}" class="customers-filter-grid filter-grid">
+            <x-sort-inputs :sorting="$sorting" />
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" for="search">Nome</label>
                 <input id="search" name="search" type="text" class="form-control" value="{{ $filters['search'] }}" placeholder="Nome, razao social ou email">
@@ -60,12 +61,12 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Cliente</th>
-                            <th>Tipo</th>
-                            <th>Status</th>
+                            <x-sort-th column="name" label="Cliente" :sorting="$sorting" />
+                            <x-sort-th column="type" label="Tipo" :sorting="$sorting" />
+                            <x-sort-th column="status" label="Status" :sorting="$sorting" />
                             <th>Contato</th>
-                            <th>Historico</th>
-                            <th>Acoes</th>
+                            <x-sort-th column="work_orders" label="Histórico" :sorting="$sorting" />
+                            <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -109,18 +110,3 @@
     </x-card>
 @endsection
 
-@push('styles')
-<style>
-@media (max-width: 1100px) {
-    .customers-filter-grid {
-        grid-template-columns: 1fr 1fr 1fr 1fr !important;
-    }
-}
-
-@media (max-width: 700px) {
-    .customers-filter-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
-</style>
-@endpush

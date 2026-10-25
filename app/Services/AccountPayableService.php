@@ -167,6 +167,19 @@ class AccountPayableService
         }
     }
 
+    public function delete(AccountPayable $payable, User $actor): void
+    {
+        $workOrder = $payable->workOrder;
+
+        DB::transaction(function () use ($payable, $workOrder, $actor): void {
+            $payable->delete();
+
+            if ($workOrder !== null) {
+                $this->workOrderFinancialService->recalculateFinancials($workOrder, $actor);
+            }
+        });
+    }
+
     private function createSinglePayable(array $data, User $actor, int $installmentNumber, int $totalInstallments): AccountPayable
     {
         $payload = $data;

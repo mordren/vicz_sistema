@@ -19,16 +19,16 @@
         <a href="{{ route('customers.index') }}" class="btn btn-ghost">Voltar</a>
     </x-page-header>
 
-    <div class="stat-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+    <div class="stat-grid">
         <x-stat-card label="Total contratado" value="R$ {{ number_format($summary['total_contracted'], 2, ',', '.') }}" delta="ordens de servico" trend="neutral" icon='<path d="M3 13h2v-2H3v2zm4 0h14v-2H7v2z"/>' iconVariant="navy" />
         <x-stat-card label="Total recebido" value="R$ {{ number_format($summary['total_received'], 2, ',', '.') }}" delta="historico de recebimentos" trend="positive" icon='<path d="M5 13l4 4L19 7"/>' iconVariant="green" />
         <x-stat-card label="Total vencido" value="R$ {{ number_format($summary['total_overdue'], 2, ',', '.') }}" delta="risco financeiro" trend="negative" icon='<path d="M1 21h22L12 2 1 21z"/>' iconVariant="red" />
         <x-stat-card label="Saldo pendente" value="R$ {{ number_format($summary['pending_balance'], 2, ',', '.') }}" delta="recebiveis abertos" trend="neutral" icon='<path d="M12 8V4l-8 8 8 8v-4h8v-8z"/>' iconVariant="amber" />
     </div>
 
-    <div class="customer-detail-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+    <div class="customer-detail-grid grid-2" style="gap:16px;align-items:start;">
         <x-card title="Cadastro">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="grid-2" style="gap:10px;">
                 <div><div class="form-label">Nome</div><div>{{ $customer->name }}</div></div>
                 <div><div class="form-label">Tipo</div><div>{{ $customer->type->label() }}</div></div>
                 <div><div class="form-label">CPF</div><div>{{ $customer->cpf ?: '-' }}</div></div>
@@ -102,16 +102,3 @@
     </div>
 @endsection
 
-@push('styles')
-<style>
-@media (max-width: 980px) {
-    .stat-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .customer-detail-grid {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
-@endpush

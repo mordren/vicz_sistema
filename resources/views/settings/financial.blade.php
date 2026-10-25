@@ -25,7 +25,7 @@
             @csrf
             @method('PATCH')
 
-            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+            <div class="grid-2" style="gap: 16px;">
                 <div class="form-group">
                     <label class="form-label">Saldo Inicial de Caixa</label>
                     <input type="number" step="0.01" min="0" name="cash_balance" class="form-control @error('cash_balance') is-invalid @enderror" value="{{ old('cash_balance', $settings->get('cash_balance')?->value ?? 0) }}" required>

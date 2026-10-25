@@ -22,7 +22,7 @@
         @endcan
     </x-page-header>
 
-    <div class="stat-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+    <div class="stat-grid">
         <x-stat-card
             label="Abertos"
             :value="$summary['open']"
@@ -52,7 +52,8 @@
     </div>
 
     <x-filter-bar label="Filtros">
-        <form id="alert-filter-form" method="GET" action="{{ route('alerts.index') }}" class="alerts-filter-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 2fr auto auto;gap:8px;width:100%;align-items:end;">
+        <form id="alert-filter-form" method="GET" action="{{ route('alerts.index') }}" class="alerts-filter-grid filter-grid">
+            <x-sort-inputs :sorting="$sorting" />
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" for="type">Tipo</label>
                 <select id="type" name="type" class="form-control form-select">
@@ -119,13 +120,13 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Severidade</th>
-                            <th>Titulo</th>
-                            <th>Tipo</th>
-                            <th>Status</th>
-                            <th>Data</th>
+                            <x-sort-th column="severity" label="Severidade" :sorting="$sorting" />
+                            <x-sort-th column="title" label="Título" :sorting="$sorting" />
+                            <x-sort-th column="type" label="Tipo" :sorting="$sorting" />
+                            <x-sort-th column="status" label="Status" :sorting="$sorting" />
+                            <x-sort-th column="created_at" label="Data" :sorting="$sorting" />
                             <th>Registro</th>
-                            <th>Acoes</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -210,21 +211,6 @@
     opacity: .74;
 }
 
-@media (max-width: 1200px) {
-    .stat-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .alerts-filter-grid {
-        grid-template-columns: 1fr 1fr 1fr !important;
-    }
-}
-
-@media (max-width: 760px) {
-    .alerts-filter-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
 </style>
 @endpush
 

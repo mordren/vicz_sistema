@@ -14,7 +14,7 @@
         @endcan
     </x-page-header>
 
-    <div class="stat-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));">
+    <div class="stat-grid">
         <x-stat-card
             label="Previsto hoje"
             value="R$ {{ number_format($summaryCards['todayExpected'], 2, ',', '.') }}"
@@ -62,7 +62,8 @@
     </div>
 
     <x-filter-bar label="Filtros">
-        <form method="GET" action="{{ route('receivables.index') }}" class="receivables-filter-grid" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 2fr auto auto;gap:8px;width:100%;align-items:end;">
+        <form method="GET" action="{{ route('receivables.index') }}" class="receivables-filter-grid filter-grid">
+            <x-sort-inputs :sorting="$sorting" />
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" for="customer_id">Cliente</label>
                 <select id="customer_id" name="customer_id" class="form-control form-select">
@@ -118,7 +119,7 @@
         </form>
     </x-filter-bar>
 
-    <div class="receivables-layout" style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;">
+    <div class="receivables-layout layout-aside layout-aside--list" style="gap:16px;align-items:start;">
         <x-card title="Recebíveis ({{ $receivables->total() }})">
             @if($receivables->isEmpty())
                 <x-empty-state
@@ -131,14 +132,15 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Cliente</th>
-                                <th>Descrição</th>
-                                <th>Tipo</th>
+                                <x-sort-th column="customer" label="Cliente" :sorting="$sorting" />
+                                <x-sort-th column="description" label="Descrição" :sorting="$sorting" />
+                                <x-sort-th column="type" label="Tipo" :sorting="$sorting" />
                                 <th>OS</th>
-                                <th>Data prevista</th>
-                                <th class="text-right">Valor</th>
-                                <th>Status</th>
-                                <th>Pagamento</th>
+                                <x-sort-th column="expected_date" label="Data prevista" :sorting="$sorting" />
+                                <x-sort-th column="received_date" label="Recebido em" :sorting="$sorting" />
+                                <x-sort-th column="amount" label="Valor" :sorting="$sorting" class="text-right" />
+                                <x-sort-th column="status" label="Status" :sorting="$sorting" />
+                                <x-sort-th column="payment_method" label="Pagamento" :sorting="$sorting" />
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -155,8 +157,9 @@
                                         @endif
                                     </td>
                                     <td>{{ $receivable->receivable_type->label() }}</td>
-                                    <td>{{ $receivable->work_order_number ?? '-' }}</td>
+                                    <td class="td-mono">{{ $receivable->work_order_number ?? '-' }}</td>
                                     <td>{{ $receivable->expected_date->format('d/m/Y') }}</td>
+                                    <td>{{ $receivable->received_date?->format('d/m/Y') ?? '-' }}</td>
                                     <td class="text-right td-mono">R$ {{ number_format((float) $receivable->expected_amount, 2, ',', '.') }}</td>
                                     <td>
                                         <x-status-badge
@@ -222,36 +225,3 @@
     </div>
 @endsection
 
-@push('styles')
-<style>
-@media (max-width: 1200px) {
-    .stat-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .receivables-filter-grid {
-        grid-template-columns: 1fr 1fr 1fr 1fr;
-    }
-}
-
-@media (max-width: 900px) {
-    .stat-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .receivables-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .receivables-filter-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
-@media (max-width: 640px) {
-    .receivables-filter-grid {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
-@endpush

@@ -14,7 +14,7 @@
         @endcan
     </x-page-header>
 
-    <div class="stat-grid" style="grid-template-columns:repeat(5,minmax(0,1fr));">
+    <div class="stat-grid">
         <x-stat-card
             label="OS ativas"
             :value="$summaryCards['totalOpen']"
@@ -62,7 +62,8 @@
     </div>
 
     <x-filter-bar label="Filtros">
-        <form id="work-order-filter-form" method="GET" action="{{ route('work-orders.index') }}" class="work-orders-filter-grid" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr auto auto;gap:8px;width:100%;align-items:end;">
+        <form id="work-order-filter-form" method="GET" action="{{ route('work-orders.index') }}" class="work-orders-filter-grid filter-grid">
+            <x-sort-inputs :sorting="$sorting" />
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" for="customer_id">Cliente</label>
                 <select id="customer_id" name="customer_id" class="form-control form-select">
@@ -136,14 +137,14 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>OS</th>
-                            <th>Cliente</th>
-                            <th>Serviço</th>
-                            <th>Responsável</th>
-                            <th>Progresso</th>
-                            <th>Entrega</th>
-                            <th class="text-right">Saldo</th>
-                            <th>Status</th>
+                            <x-sort-th column="number" label="OS" :sorting="$sorting" />
+                            <x-sort-th column="customer" label="Cliente" :sorting="$sorting" />
+                            <x-sort-th column="service_type" label="Serviço" :sorting="$sorting" />
+                            <x-sort-th column="responsible" label="Responsável" :sorting="$sorting" />
+                            <x-sort-th column="progress" label="Progresso" :sorting="$sorting" />
+                            <x-sort-th column="expected_delivery_date" label="Entrega" :sorting="$sorting" />
+                            <x-sort-th column="receivable_balance" label="Saldo" :sorting="$sorting" class="text-right" />
+                            <x-sort-th column="status" label="Status" :sorting="$sorting" />
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -266,31 +267,6 @@
     font-feature-settings: "tnum";
 }
 
-@media (max-width: 1200px) {
-    .stat-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .work-orders-filter-grid {
-        grid-template-columns: 1fr 1fr 1fr 1fr !important;
-    }
-}
-
-@media (max-width: 860px) {
-    .stat-grid {
-        grid-template-columns: 1fr !important;
-    }
-
-    .work-orders-filter-grid {
-        grid-template-columns: 1fr 1fr !important;
-    }
-}
-
-@media (max-width: 640px) {
-    .work-orders-filter-grid {
-        grid-template-columns: 1fr !important;
-    }
-}
 </style>
 @endpush
 

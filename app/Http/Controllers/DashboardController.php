@@ -587,7 +587,7 @@ class DashboardController extends Controller
             $date = $startMonth->copy()->addMonths($i);
             $key  = $date->format('Y-m');
             $monthKeys[]       = $key;
-            $months[]          = ['key' => $key, 'label' => strtoupper($date->format('M'))];
+            $months[]          = ['key' => $key, 'label' => mb_strtoupper($date->translatedFormat('M'))];
             $receivedByMonth[$key] = 0.0;
             $expenseByMonth[$key]  = 0.0;
         }

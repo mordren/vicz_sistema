@@ -18,7 +18,7 @@
     </x-page-header>
 
     <x-card title="Resumo do alerta">
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;">
+        <div class="grid-2" style="gap:16px;">
             <div>
                 <div class="form-label">Titulo</div>
                 <div style="font-weight:600;">{{ $alert->title }}</div>

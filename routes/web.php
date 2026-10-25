@@ -102,6 +102,7 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::patch('settings/users/{user}', [UserController::class, 'update'])->name('settings.users.update');
         Route::get('settings/users/{user}', [UserController::class, 'show'])->name('settings.users.show');
         Route::patch('settings/users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('settings.users.toggle-active');
+        Route::delete('settings/users/{user}', [UserController::class, 'destroy'])->name('settings.users.destroy');
 
         // Cron execution log (last 100 lines)
         Route::get('settings/cron-log', [SettingsController::class, 'cronLog'])->name('settings.cron-log');

@@ -10,7 +10,7 @@
     </div>
 
     <div class="card" style="max-width: 920px; border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 16px;">
-        <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+        <div class="grid-2" style="gap: 16px;">
             <div>
                 <p style="margin:0 0 4px; color:#45464e; font-size:12px; font-weight:600; letter-spacing:.05em;">NOME</p>
                 <p style="margin:0; color:#191c1d;">{{ $user->name }}</p>

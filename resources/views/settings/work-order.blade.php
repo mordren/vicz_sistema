@@ -18,7 +18,7 @@
             @csrf
             @method('PATCH')
 
-            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+            <div class="grid-2" style="gap: 16px;">
                 <div class="form-group">
                     <label class="form-label">Dias de Aviso de Entrega</label>
                     <input type="number" min="1" name="default_delivery_warning_days" class="form-control @error('default_delivery_warning_days') is-invalid @enderror" value="{{ old('default_delivery_warning_days', $settings->get('default_delivery_warning_days')?->value ?? 7) }}" required>

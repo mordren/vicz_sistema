@@ -15,6 +15,7 @@
             && in_array($proposal->status, [ProposalStatus::SENT, ProposalStatus::NEGOTIATING], true);
         $canCancel = auth()->user()->can('cancel', $proposal)
             && in_array($proposal->status, [ProposalStatus::SENT, ProposalStatus::NEGOTIATING], true);
+        $canDelete = auth()->user()->can('delete', $proposal);
     @endphp
 
     <x-page-header
@@ -23,6 +24,13 @@
     >
         @if($canUpdate)
             <a href="{{ route('proposals.edit', $proposal) }}" class="btn btn-secondary">Editar</a>
+        @endif
+        @if($canDelete)
+            <form method="POST" action="{{ route('proposals.destroy', $proposal) }}" style="display:inline;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Excluir esta proposta permanentemente? Esta ação não pode ser desfeita.')">Excluir</button>
+            </form>
         @endif
         <a href="{{ route('proposals.index') }}" class="btn btn-ghost">Voltar</a>
     </x-page-header>
@@ -39,10 +47,10 @@
         />
     @endif
 
-    <div class="proposal-show-layout" style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start;">
+    <div class="proposal-show-layout layout-aside" style="gap:16px;align-items:start;">
         <div style="display:flex;flex-direction:column;gap:16px;">
             <x-card title="Dados da Proposta">
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+                <div class="grid-3" style="gap:14px;">
                     <div>
                         <div class="form-label">Cliente</div>
                         <div>{{ $proposal->customer }}</div>
@@ -239,16 +247,5 @@
     font-feature-settings: "tnum";
 }
 
-@media (max-width: 1040px) {
-    .proposal-show-layout {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 700px) {
-    .proposal-show-layout .card-body > div[style*="grid-template-columns:1fr 1fr 1fr"] {
-        grid-template-columns: 1fr !important;
-    }
-}
 </style>
 @endpush

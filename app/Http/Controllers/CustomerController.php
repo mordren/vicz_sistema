@@ -9,6 +9,7 @@ use App\Http\Requests\StoreCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Models\AccountReceivable;
 use App\Models\Customer;
+use App\Support\ListSorter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -30,7 +31,7 @@ class CustomerController extends Controller
             'overdue_only' => (bool) $request->boolean('overdue_only'),
         ];
 
-        $query = Customer::query()->orderBy('name');
+        $query = Customer::query();
 
         if ($filters['search'] !== '') {
             $query->where(function ($inner) use ($filters): void {
@@ -70,6 +71,13 @@ class CustomerController extends Controller
             });
         }
 
+        $sorting = ListSorter::apply($query, $request, [
+            'name' => 'name',
+            'type' => 'type',
+            'status' => 'status',
+            'work_orders' => fn ($q, $dir) => $q->orderBy('work_orders_count', $dir),
+        ], 'name');
+
         $customers = $query
             ->withCount([
                 'workOrders',
@@ -81,6 +89,7 @@ class CustomerController extends Controller
 
         return view('customers.index', [
             'customers' => $customers,
+            'sorting' => $sorting,
             'filters' => $filters,
             'statuses' => CustomerStatus::cases(),
             'types' => CustomerType::cases(),

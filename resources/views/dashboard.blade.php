@@ -683,7 +683,8 @@
 
     .db-kpi-grid             { grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .db-kpi-card             { padding: 12px; }
-    .db-kpi-card__value      { font-size: 18px; }
+    .db-kpi-card__icon       { display: none; }
+    .db-kpi-card__value      { font-size: 18px; white-space: nowrap; text-overflow: ellipsis; }
 
     .db-finance-metrics      { grid-template-columns: repeat(2, 1fr); }
     .db-ops-metrics          { grid-template-columns: repeat(2, 1fr); }

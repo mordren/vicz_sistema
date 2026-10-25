@@ -183,6 +183,19 @@ class AccountReceivableService
         }
     }
 
+    public function delete(AccountReceivable $receivable, User $actor): void
+    {
+        $workOrder = $receivable->workOrder;
+
+        DB::transaction(function () use ($receivable, $workOrder, $actor): void {
+            $receivable->delete();
+
+            if ($workOrder !== null) {
+                $this->recalculateWorkOrderReceivableTotals($workOrder, $actor);
+            }
+        });
+    }
+
     public function recalculateWorkOrderReceivableTotals(WorkOrder $workOrder, ?User $actor = null): void
     {
         $receivedTotal = (float) AccountReceivable::query()

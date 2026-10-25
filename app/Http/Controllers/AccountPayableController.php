@@ -11,6 +11,7 @@ use App\Http\Requests\UpdateAccountPayableRequest;
 use App\Models\AccountPayable;
 use App\Models\WorkOrder;
 use App\Services\AccountPayableService;
+use App\Support\ListSorter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -27,10 +28,7 @@ class AccountPayableController extends Controller
         $this->service->syncOverdueStatuses();
 
         $query = AccountPayable::query()
-            ->with(['workOrder:id,number,customer'])
-            ->orderByRaw("CASE status WHEN 'OVERDUE' THEN 0 WHEN 'OPEN' THEN 1 WHEN 'PAID' THEN 2 ELSE 3 END")
-            ->orderBy('due_date')
-            ->orderByDesc('id');
+            ->with(['workOrder:id,number,customer']);
 
         $filters = [
             'supplier' => (string) $request->string('supplier'),
@@ -68,6 +66,23 @@ class AccountPayableController extends Controller
 
         if ($filters['work_order_id'] !== '') {
             $query->where('work_order_id', (int) $filters['work_order_id']);
+        }
+
+        $sorting = ListSorter::apply($query, $request, [
+            'supplier' => 'supplier',
+            'description' => 'description',
+            'category' => 'category',
+            'installment' => 'installment_number',
+            'due_date' => 'due_date',
+            'payment_date' => 'payment_date',
+            'amount' => 'amount',
+            'status' => ListSorter::byPriority('status', ['OVERDUE', 'OPEN', 'PAID', 'CANCELLED']),
+        ], $status === PayableStatus::PAID ? 'payment_date' : null, 'desc');
+
+        if ($sorting['sort'] === null) {
+            $query->orderByRaw("CASE status WHEN 'OVERDUE' THEN 0 WHEN 'OPEN' THEN 1 WHEN 'PAID' THEN 2 ELSE 3 END")
+                ->orderBy('due_date')
+                ->orderByDesc('id');
         }
 
         $payables = $query->paginate(15)->withQueryString();
@@ -146,6 +161,7 @@ class AccountPayableController extends Controller
 
         return view('payables.index', [
             'payables' => $payables,
+            'sorting' => $sorting,
             'overdueSuppliers' => $overdueSuppliers,
             'workOrders' => $workOrders,
             'filters' => $filters,
@@ -323,20 +339,14 @@ class AccountPayableController extends Controller
 
     public function destroy(AccountPayable $payable): RedirectResponse
     {
-        $this->authorize('update', $payable);
+        $this->authorize('delete', $payable);
 
-        if ($payable->status === PayableStatus::PAID) {
-            return redirect()
-                ->route('payables.show', $payable)
-                ->with('error', 'Conta ja paga nao pode ser cancelada.');
-        }
-
-        $this->service->cancel($payable, auth()->user());
+        $this->service->delete($payable, auth()->user());
 
         Cache::increment('dashboard_finance_version');
 
         return redirect()
             ->route('payables.index')
-            ->with('success', 'Conta cancelada com sucesso.');
+            ->with('success', 'Conta excluída com sucesso.');
     }
 }

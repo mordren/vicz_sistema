@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
+use App\Support\ListSorter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -18,12 +19,21 @@ class UserController extends Controller
     {
         Gate::authorize('manageUsers', User::class);
 
-        $users = User::query()
-            ->orderBy('name')
-            ->paginate(20);
+        $query = User::query();
+
+        $sorting = ListSorter::apply($query, $request, [
+            'name' => 'name',
+            'email' => 'email',
+            'role' => 'role',
+            'active' => 'active',
+            'created_at' => 'created_at',
+        ], 'name');
+
+        $users = $query->paginate(20)->withQueryString();
 
         return view('settings.users.index', [
             'users' => $users,
+            'sorting' => $sorting,
         ]);
     }
 
@@ -129,6 +139,23 @@ class UserController extends Controller
         return redirect()
             ->route('settings.users.index')
             ->with('success', "Usuário {$status} com sucesso.");
+    }
+
+    public function destroy(User $user): RedirectResponse
+    {
+        Gate::authorize('manageUsers', User::class);
+
+        if ($user->id === auth()->id()) {
+            return redirect()
+                ->route('settings.users.index')
+                ->with('error', 'Você não pode excluir sua própria conta.');
+        }
+
+        $user->delete();
+
+        return redirect()
+            ->route('settings.users.index')
+            ->with('success', 'Usuário excluído com sucesso.');
     }
 
     public function permissions(): View
